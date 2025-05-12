@@ -1,0 +1,27 @@
+RUN WITH: yarn start:dev
+
+
+LASER (of some description)
+channel 1 - 64-128 = cycle
+channel 2 - select scene
+    - 186 - apple
+    - 166 - 182 = 1 to 9
+    - 201: pig
+    when in cycle mode:
+        0 - 15: circles, sines
+        16 - scrolling lines
+        32 - flying bananas
+        48: more scrolling lines 
+        64 - expanding lines
+        144 - fancy sines
+channel 3 - rotation? wobbble? auto after 128 - steps of 32 
+
+channel 4 = mirror x
+channel 5 = mirror y
+
+channel 6 = x
+channel 7 = y
+channel 8 - scale
+channel 9 = rfresh
+channel 10 - dir/speed? - > 128 = dots
+channel 11 - colour cycle

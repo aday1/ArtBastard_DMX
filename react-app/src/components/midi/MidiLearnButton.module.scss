@@ -1,0 +1,87 @@
+.learnButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: var(--border-radius);
+  font-size: 0.8rem;
+  transition: all var(--transition-speed) ease;
+  position: relative;
+  gap: 6px;
+  min-width: 100px;
+  overflow: hidden;
+  border: 1px solid var(--color-card-border);
+  
+  &:hover {
+    transform: translateY(-1px);
+  }
+  
+  &.default {
+    background-color: var(--color-card-bg);
+    color: var(--color-text);
+    opacity: 0.7;
+    
+    &:hover {
+      opacity: 1;
+      border-color: var(--color-primary);
+    }
+  }
+  
+  &.learning {
+    background-color: var(--color-primary);
+    color: white;
+    animation: pulse 1.5s infinite;
+  }
+  
+  &.success {
+    background-color: var(--color-success);
+    color: white;
+  }
+  
+  &.error {
+    background-color: var(--color-error);
+    color: white;
+  }
+  
+  &.mapped {
+    background-color: rgba(var(--color-primary-rgb), 0.2);
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+    font-weight: 600;
+    
+    &:hover {
+      background-color: rgba(var(--color-primary-rgb), 0.3);
+    }
+  }
+}
+
+.pulsingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.8);
+  animation: dotPulse 0.75s infinite alternate;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(var(--color-primary-rgb), 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--color-primary-rgb), 0);
+  }
+}
+
+@keyframes dotPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}

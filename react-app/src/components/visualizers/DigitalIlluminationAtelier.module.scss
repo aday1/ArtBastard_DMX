@@ -1,0 +1,329 @@
+.atelier {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    padding: 2rem;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.95);
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  font-size: 1.8rem;
+  margin: 0;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+  font-family: 'Playfair Display', serif;
+}
+
+.controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.toggles {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggle {
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  
+  &.active {
+    background: rgba(78, 205, 196, 0.2);
+    border-color: rgba(78, 205, 196, 0.3);
+    color: #4ecdc4;
+  }
+}
+
+.fullscreenButton {
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(78, 205, 196, 0.3);
+  border-radius: 4px;
+  background: rgba(78, 205, 196, 0.1);
+  color: #4ecdc4;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(78, 205, 196, 0.2);
+  }
+  
+  i {
+    font-size: 1.2em;
+  }
+}
+
+.description {
+  margin-bottom: 2rem;
+  
+  .artDescription {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+    line-height: 1.6;
+    text-align: center;
+    padding: 1rem;
+    border-left: 3px solid rgba(78, 205, 196, 0.3);
+    background: rgba(0, 0, 0, 0.2);
+    margin: 0;
+  }
+}
+
+.visualizerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  
+  .fullscreen & {
+    grid-template-columns: repeat(2, 1fr);
+    height: calc(100vh - 200px);
+  }
+}
+
+.visualizerPanel {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: rgba(78, 205, 196, 0.3);
+    box-shadow: 0 0 20px rgba(78, 205, 196, 0.1);
+  }
+  
+  h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-family: 'Playfair Display', serif;
+    
+    &::before {
+      content: '✧';
+      margin-right: 0.5rem;
+      color: #4ecdc4;
+    }
+  }
+  
+  .fullscreen & {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    
+    & > div {
+      flex: 1;
+      min-height: 0; // Important for proper scrolling
+    }
+  }
+}
+
+.digitalIlluminationAtelier {
+  position: relative;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  &.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    margin: 0;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.95);
+    padding: 2rem;
+
+    .canvas {
+      height: calc(100vh - 12rem);
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: 2rem;
+    }
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+    margin: 0;
+    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(78, 205, 196, 0.3);
+    font-family: 'Playfair Display', serif;
+  }
+
+  .controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .toggles {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .toggle {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    &.active {
+      background: rgba(78, 205, 196, 0.2);
+      border-color: rgba(78, 205, 196, 0.3);
+      color: #4ecdc4;
+    }
+  }
+
+  .fullscreenButton {
+    padding: 0.5rem 1rem;
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    border-radius: 4px;
+    background: rgba(78, 205, 196, 0.1);
+    color: #4ecdc4;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+
+    &:hover {
+      background: rgba(78, 205, 196, 0.2);
+    }
+
+    i {
+      font-size: 1.2em;
+    }
+
+    span {
+      display: none;
+      @media (min-width: 768px) {
+        display: inline;
+      }
+    }
+  }
+
+  .description {
+    margin: 1rem 0 2rem;
+
+    .artDescription {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 1.1rem;
+      line-height: 1.6;
+      text-align: center;
+      padding: 1.5rem;
+      border-left: 3px solid rgba(78, 205, 196, 0.3);
+      background: rgba(0, 0, 0, 0.2);
+      margin: 0;
+      border-radius: 4px;
+    }
+  }
+
+  .canvas {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 1;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+
+    &:hover {
+      box-shadow: 0 4px 20px rgba(78, 205, 196, 0.15);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+    
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+      
+      .controls {
+        flex-direction: column;
+      }
+    }
+    
+    .title {
+      font-size: 1.2rem;
+      text-align: center;
+    }
+
+    .toggles {
+      justify-content: center;
+    }
+
+    .description {
+      margin: 1rem 0;
+      
+      .artDescription {
+        font-size: 1rem;
+        padding: 1rem;
+      }
+    }
+  }
+}

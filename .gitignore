@@ -1,0 +1,21 @@
+node_modules
+build
+
+# Log files and directories
+logs/
+logs_backup/
+*.log
+
+# Cache and build artifacts
+.cache/
+dist/
+react-app/dist/
+react-app/.vite/
+
+# IDE and OS specific
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Other
+errors.log # If you want to specifically ignore a top-level errors.log

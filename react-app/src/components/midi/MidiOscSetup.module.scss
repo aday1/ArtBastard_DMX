@@ -1,0 +1,346 @@
+.midiOscSetup {
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionTitle {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.setupGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  background-color: var(--color-card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--color-card-border);
+  overflow: hidden;
+  
+  &.fullWidth {
+    grid-column: 1 / -1;
+  }
+}
+
+.cardHeader {
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-card-border);
+  
+  h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+}
+
+.cardBody {
+  padding: 1rem;
+}
+
+.interfaceList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.interfaceHeader {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  padding: 0.5rem;
+  font-weight: bold;
+  border-bottom: 1px solid var(--color-card-border);
+  font-size: 0.9rem;
+}
+
+.interfaceItem {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 1rem;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--color-card-border);
+  align-items: center;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.interfaceName {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
+}
+
+.interfaceManufacturer {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-top: 0.2rem;
+}
+
+.interfaceStatus {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  background-color: var(--color-status-inactive);
+  color: white;
+  text-align: center;
+  
+  &.active {
+    background-color: var(--color-status-connected);
+  }
+}
+
+.interfaceActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.actionButton {
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all var(--transition-speed) ease;
+  border: 1px solid;
+  
+  i {
+    font-size: 0.7rem;
+  }
+  
+  &.connectButton {
+    border-color: var(--color-success);
+    color: var(--color-success);
+    
+    &:hover {
+      background-color: var(--color-success);
+      color: white;
+    }
+  }
+  
+  &.disconnectButton {
+    border-color: var(--color-error);
+    color: var(--color-error);
+    
+    &:hover {
+      background-color: var(--color-error);
+      color: white;
+    }
+  }
+}
+
+.refreshButton,
+.saveButton,
+.forgetAllButton,
+.clearButton {
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all var(--transition-speed) ease;
+  margin-top: 1rem;
+  
+  i {
+    font-size: 0.9rem;
+  }
+}
+
+.refreshButton {
+  align-self: center;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.saveButton {
+  background-color: var(--color-success);
+  color: white;
+  border: none;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.forgetAllButton {
+  background-color: var(--color-error);
+  color: white;
+  border: none;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.clearButton {
+  background: none;
+  border: 1px solid var(--color-card-border);
+  color: var(--color-text);
+  
+  &:hover {
+    background-color: var(--color-card-border);
+  }
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: 1rem;
+  text-align: center;
+  color: var(--color-secondary);
+  
+  i {
+    font-size: 2rem;
+    opacity: 0.5;
+  }
+}
+
+.browserMidiError {
+  color: var(--color-error);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+  
+  input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-card-border);
+    border-radius: var(--border-radius);
+    background-color: var(--color-card-bg);
+    color: var(--color-text);
+    
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+  }
+}
+
+.mappingInstructions {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--color-secondary);
+  font-style: italic;
+  text-align: center;
+}
+
+.midiMessages {
+  height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--border-radius);
+  padding: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  margin-top: 1rem;
+}
+
+.midiMessage {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--color-card-border);
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: var(--color-secondary);
+}
+
+.messageType {
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  font-weight: bold;
+  
+  &.noteon {
+    background-color: rgba(var(--color-success-rgb), 0.2);
+    color: var(--color-success);
+  }
+  
+  &.noteoff {
+    background-color: rgba(var(--color-error-rgb), 0.2);
+    color: var(--color-error);
+  }
+  
+  &.cc {
+    background-color: rgba(var(--color-primary-rgb), 0.2);
+    color: var(--color-primary);
+  }
+  
+  &.browser {
+    position: relative;
+    
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--color-info, cornflowerblue);
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+  }
+}
+
+.messageContent {
+  flex: 1;
+}
+
+.emptyMessages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-secondary);
+  text-align: center;
+  padding: 2rem;
+}

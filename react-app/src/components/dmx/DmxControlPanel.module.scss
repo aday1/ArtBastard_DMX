@@ -1,0 +1,184 @@
+.dmxControlPanel {
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionTitle {
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  
+  // Theme-specific styles are handled in the global ThemeContext
+}
+
+.statusBar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  background-color: var(--color-card-bg);
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.progressBar {
+  flex: 1;
+  height: 10px;
+  background-color: var(--color-slider-track);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-right: 1rem;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.8rem;
+  color: var(--color-secondary);
+}
+
+.controlToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: var(--color-card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--card-shadow);
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+  }
+}
+
+.selectionControls,
+.pageControls,
+.viewControls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selectionControls {
+  flex: 1;
+}
+
+.viewControls {
+  flex: 1;
+  justify-content: flex-end;
+  
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
+}
+
+.toolbarButton,
+.pageButton,
+.paginationButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--border-radius);
+  color: var(--color-text);
+  transition: all var(--transition-speed) ease;
+  cursor: pointer;
+  
+  &:hover:not(:disabled) {
+    background-color: var(--color-primary);
+    color: white;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  i {
+    font-size: 0.9rem;
+  }
+}
+
+.pageSelect,
+.viewSelect {
+  padding: 0.5rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--border-radius);
+  background-color: var(--color-card-bg);
+  color: var(--color-text);
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+  max-width: 200px;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem;
+  padding-right: 2rem;
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--border-radius);
+  background-color: var(--color-card-bg);
+  color: var(--color-text);
+  
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.clearSearch {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-text);
+  opacity: 0.5;
+  cursor: pointer;
+  
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.channelsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.pageIndicator {
+  padding: 0.5rem 1rem;
+  background-color: var(--color-card-bg);
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+}

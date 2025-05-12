@@ -1,0 +1,145 @@
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  .navButtons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  
+  .rightSideContainer {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .dmxStatsContainer {
+    display: flex;
+    align-items: center;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    padding-right: 1.5rem;
+  }
+
+  .networkStatusContainer {
+    display: flex;
+    align-items: center;
+  }
+
+  .navButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 120px;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: #4ecdc4;
+      transform: scaleX(0);
+      transition: transform 0.2s ease;
+    }
+
+    i {
+      font-size: 1.1em;
+      opacity: 0.8;
+      transition: transform 0.2s ease;
+    }
+
+    span {
+      font-weight: 500;
+    }
+
+    &:hover {
+      background: rgba(78, 205, 196, 0.1);
+      transform: translateY(-1px);
+
+      i {
+        transform: scale(1.1);
+        opacity: 1;
+      }
+
+      &::after {
+        transform: scaleX(1);
+      }
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &.active {
+      background: rgba(78, 205, 196, 0.15);
+      color: #4ecdc4;
+
+      i {
+        opacity: 1;
+      }
+
+      &::after {
+        transform: scaleX(1);
+      }
+    }
+  }
+  @media (max-width: 768px) {
+    padding: 0.5rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    
+    .rightSideContainer {
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding-top: 0.5rem;
+    }
+    
+    .dmxStatsContainer {
+      border-right: none;
+      padding-right: 0;
+      padding-bottom: 0.25rem;
+    }
+
+    .navButton {
+      min-width: auto;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      flex: 1;
+      min-width: 80px;
+
+      span {
+        display: none;
+      }
+
+      i {
+        margin: 0;
+        font-size: 1.2em;
+      }
+    }
+  }
+}
