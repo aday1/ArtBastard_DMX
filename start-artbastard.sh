@@ -111,7 +111,7 @@ fi
 # --- Build Frontend (React App) ---
 write_info "Building React app..."
 cd "$SCRIPT_DIR/react-app" || exit
-if npx tsc && npx vite build; then # Changed to use npx
+if npx --node-options="--max-old-space-size=1024" tsc && npx --node-options="--max-old-space-size=1024" vite build; then # Added memory limit
     write_success "React app build successful."
 else
     write_error "React app build failed. Please check the output above."
@@ -137,7 +137,7 @@ fi
 # --- Start React App (Development Server) ---
 write_info "Starting React app development server in the background..."
 cd "$SCRIPT_DIR/react-app" || exit
-npx vite > "$SCRIPT_DIR/react-app-dev-server.log" 2>&1 & # Changed to use npx
+npx --node-options="--max-old-space-size=1024" vite > "$SCRIPT_DIR/react-app-dev-server.log" 2>&1 & # Added memory limit
 REACT_APP_PID=$!
 sleep 5 # Give React app dev server time to start
 
