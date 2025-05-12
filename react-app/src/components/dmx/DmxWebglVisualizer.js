@@ -9,7 +9,7 @@ const vertexShaderSource = `
   
   uniform mat4 uModelViewMatrix;
   uniform mat4 uProjectionMatrix;
-  uniform float uTime;
+  // uniform float uTime; // Removed as unused
   
   varying highp vec2 vTextureCoord;
   
@@ -26,7 +26,7 @@ const fragmentShaderSource = `
   uniform sampler2D uDmxValues;
   uniform vec3 uColorStart;
   uniform vec3 uColorEnd;
-  uniform float uTime;
+  // uniform float uTime; // Removed as unused
   
   void main() {
     float value = texture2D(uDmxValues, vTextureCoord).r;
@@ -92,7 +92,7 @@ export const DmxWebglVisualizer = ({ sticky = false }) => {
                 dmxValues: gl.getUniformLocation(shaderProgram, 'uDmxValues'),
                 colorStart: gl.getUniformLocation(shaderProgram, 'uColorStart'),
                 colorEnd: gl.getUniformLocation(shaderProgram, 'uColorEnd'),
-                time: gl.getUniformLocation(shaderProgram, 'uTime'),
+                // time: gl.getUniformLocation(shaderProgram, 'uTime')!, // Removed as unused
             },
         };
         // Create and initialize a texture for DMX values
@@ -248,10 +248,19 @@ export const DmxWebglVisualizer = ({ sticky = false }) => {
             if (!canvas)
                 return;
             const gl = canvas.getContext('webgl');
-            if (!gl || !programInfoRef.current || !textureRef.current)
+            if (!gl || !programInfoRef.current || !textureRef.current) {
+                console.log('DmxWebglVisualizer: Render bailout - WebGL context, program info, or texture not available.');
                 return;
-            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            }
+            let glErr = gl.getError();
+            if (glErr !== gl.NO_ERROR) {
+                console.error('DmxWebglVisualizer: WebGL error at start of render (pre-existing or from previous frame):', glErr);
+            }
+            gl.clearColor(0.1, 0.1, 0.15, 1.0); // Distinct clear color
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            glErr = gl.getError();
+            if (glErr !== gl.NO_ERROR)
+                console.error('DmxWebglVisualizer: WebGL error after clear:', glErr);
             const buffers = initBuffers(gl);
             const programInfo = programInfoRef.current;
             // Set up projection and model view matrices
@@ -269,25 +278,35 @@ export const DmxWebglVisualizer = ({ sticky = false }) => {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
             // Use shader program
             gl.useProgram(programInfo.program);
+            glErr = gl.getError();
+            if (glErr !== gl.NO_ERROR)
+                console.error('DmxWebglVisualizer: WebGL error after useProgram:', glErr);
             // Set uniforms
             gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
             gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
             // Set color gradient for visualization
             gl.uniform3fv(programInfo.uniformLocations.colorStart, [0.0, 0.0, 0.2]); // Dark blue
             gl.uniform3fv(programInfo.uniformLocations.colorEnd, [0.0, 1.0, 1.0]); // Cyan
-            // Set uTime uniform
-            gl.uniform1f(programInfo.uniformLocations.time, Date.now() - startTimeRef.current);
+            // Set uTime uniform (Removed as unused)
+            // gl.uniform1f(programInfo.uniformLocations.time, (Date.now() - startTimeRef.current) / 1000.0);
             // Set up texture
             gl.activeTexture(gl.TEXTURE0);
             gl.bindTexture(gl.TEXTURE_2D, textureRef.current);
             gl.uniform1i(programInfo.uniformLocations.dmxValues, 0);
+            glErr = gl.getError();
+            if (glErr !== gl.NO_ERROR)
+                console.error('DmxWebglVisualizer: WebGL error after uniforms/texture binding:', glErr);
             // Draw
             gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+            glErr = gl.getError();
+            if (glErr !== gl.NO_ERROR) {
+                console.error('DmxWebglVisualizer: WebGL error after drawElements:', glErr);
+            }
             // Continue animation
             animationRef.current = requestAnimationFrame(render);
         }
         catch (error) {
-            console.error('Error in WebGL render loop:', error);
+            console.error('DmxWebglVisualizer: Error in WebGL render loop (JS Exception):', error);
             // Don't call requestAnimationFrame if there was an error to prevent error cascade
             setTimeout(() => {
                 // Try to restart rendering after a short delay

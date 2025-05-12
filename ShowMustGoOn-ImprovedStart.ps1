@@ -1,15 +1,19 @@
-# ShowMustGoOn-ImprovedStart.ps1
-#
-# Improved startup script for ArtBastard_DMX512FTW with built-in error handling and recovery
-#
+param(
+    [switch]$SkipBuild,
+    [switch]$NoReactApp,
+    [switch]$DevMode,
+    [switch]$FixBoxenError
+)
 
-# Enable verbose output
-$VerbosePreference = "Continue"
+# Configuration
+$AppName = "ArtBastard DMX"
+$StartTimeout = 10 # seconds to wait for server to start
+$ReactAppPort = 3000
+$ServerPort = 3030
+$LogFile = Join-Path $PSScriptRoot "server-startup.log"
+$LoggerJsPath = Join-Path $PSScriptRoot "src\logger.js"
 
-# Set error action preference
-$ErrorActionPreference = "Continue"
-
-# Function to write colored text
+# Helper Functions
 function Write-ColorOutput($ForegroundColor) {
     $fc = $host.UI.RawUI.ForegroundColor
     $host.UI.RawUI.ForegroundColor = $ForegroundColor
@@ -22,232 +26,313 @@ function Write-ColorOutput($ForegroundColor) {
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
-function Write-ArtHeading {
-    Write-Host ""
-    Write-ColorOutput Green "╔═══════════════════════════════════════════════════════════════╗"
-    Write-ColorOutput Green "║                 ArtBastard DMX512FTW Launcher                 ║"
-    Write-ColorOutput Green "║                Improved Stability & Error Handling            ║"
-    Write-ColorOutput Green "╚═══════════════════════════════════════════════════════════════╝"
-    Write-Host ""
+function Write-Success($message) {
+    Write-ColorOutput Green "✅ $message"
 }
 
-Write-ArtHeading
+function Write-Info($message) {
+    Write-ColorOutput Cyan "ℹ️ $message"
+}
 
-# Check if we're running from the correct directory
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptDir
+function Write-Warning($message) {
+    Write-ColorOutput Yellow "⚠️ $message"
+}
 
-# Kill existing node processes that might be from previous crashed instances
-Write-Host "🔄 Checking for existing ArtBastard processes..."
-try {
-    $nodePids = Get-Process -Name "node" -ErrorAction SilentlyContinue | 
-                Where-Object { $_.MainWindowTitle -match "ArtBastard" -or $_.CommandLine -match "ArtBastard" } | 
-                Select-Object -ExpandProperty Id
+function Write-Error($message) {
+    Write-ColorOutput Red "❌ $message"
+}
+
+function Test-PortInUse($port) {
+    $connections = Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | 
+                   Where-Object { $_.LocalPort -eq $port }
+    return $null -ne $connections
+}
+
+function Fix-BoxenError {
+    # Check if logger.js exists
+    $loggerJsDir = Split-Path -Path $LoggerJsPath -Parent
     
-    if ($nodePids) {
-        foreach ($pid in $nodePids) {
-            Write-Host "   ❌ Killing existing process with PID: $pid"
-            Stop-Process -Id $pid -Force
-        }
+    if (-not (Test-Path $loggerJsDir)) {
+        Write-Info "Creating logger directory..."
+        New-Item -ItemType Directory -Path $loggerJsDir -Force | Out-Null
+    }
+    
+    Write-Info "Fixing boxen borderColor error in logger.js..."
+    
+    # Create the fixed logger.js file with string color values instead of functions
+    $loggerJsContent = @'
+const chalk = require('chalk');
+const boxen = require('boxen');
+
+// Define log levels with string color values for boxen
+const LOG_LEVELS = {
+  INFO: {
+    color: 'blue',
+    prefix: 'ℹ️',
+    borderColor: 'blue'  // String value instead of function
+  },
+  SUCCESS: {
+    color: 'green',
+    prefix: '✅',
+    borderColor: 'green'  // String value instead of function
+  },
+  WARNING: {
+    color: 'yellow',
+    prefix: '⚠️',
+    borderColor: 'yellow'  // String value instead of function
+  },
+  ERROR: {
+    color: 'red',
+    prefix: '❌',
+    borderColor: 'red'  // String value instead of function
+  },
+  DEBUG: {
+    color: 'magenta',
+    prefix: '🔍',
+    borderColor: 'magenta'  // String value instead of function
+  }
+};
+
+/**
+ * Log a message with optional styling
+ * @param {string} message - The message to log
+ * @param {string} level - Log level (INFO, SUCCESS, WARNING, ERROR, DEBUG)
+ * @param {boolean} box - Whether to display the message in a box
+ */
+function log(message, level = 'INFO', box = false) {
+  const config = LOG_LEVELS[level] || LOG_LEVELS.INFO;
+  const colorFunction = chalk[config.color];
+  
+  let formattedMessage = `${config.prefix} ${message}`;
+  
+  if (box) {
+    console.log(boxen(colorFunction(formattedMessage), {
+      padding: 1,
+      margin: 1,
+      borderStyle: 'round',
+      borderColor: config.borderColor, // Using string value, not chalk function
+      backgroundColor: '#000'
+    }));
+  } else {
+    console.log(colorFunction(formattedMessage));
+  }
+}
+
+module.exports = {
+  log,
+  info: (message, box = false) => log(message, 'INFO', box),
+  success: (message, box = false) => log(message, 'SUCCESS', box),
+  warning: (message, box = false) => log(message, 'WARNING', box),
+  error: (message, box = false) => log(message, 'ERROR', box),
+  debug: (message, box = false) => log(message, 'DEBUG', box)
+};
+'@
+
+    # Write the content to the file
+    $loggerJsContent | Out-File -FilePath $LoggerJsPath -Encoding utf8 -Force
+    
+    if (Test-Path $LoggerJsPath) {
+        Write-Success "logger.js updated successfully at $LoggerJsPath"
+        return $true
     } else {
-        Write-Host "   ✅ No existing processes found."
+        Write-Error "Failed to create or update logger.js"
+        return $false
     }
-} catch {
-    Write-ColorOutput Yellow "   ⚠️ Couldn't check for existing processes: $_"
 }
 
-# Check if required ports are available
-Write-Host "🔄 Checking if required ports are available..."
-$reqPorts = @(3000, 3001, 5173)
-$needToKillProcess = $false
+# Show welcome banner
+Write-Host ""
+Write-Host "╔══════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
+Write-Host "║                                                          ║" -ForegroundColor Magenta
+Write-Host "║         " -ForegroundColor Magenta -NoNewline; Write-Host "🎛️  $AppName Start Script  🎛️" -ForegroundColor White -NoNewline; Write-Host "          ║" -ForegroundColor Magenta
+Write-Host "║                                                          ║" -ForegroundColor Magenta
+Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
+Write-Host ""
 
-foreach ($port in $reqPorts) {
-    $portInUse = $null
-    try {
-        $portInUse = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-    } catch {
-        Write-Host "   ✅ Port $port is available."
-        continue
+# Fix boxen error if requested or always apply the fix
+if ($FixBoxenError -or $true) { # Always apply the fix
+    $fixResult = Fix-BoxenError
+    if (-not $fixResult) {
+        Write-Warning "Failed to fix boxen error. The server might still crash."
+    }
+}
+
+# Check if server port is already in use
+if (Test-PortInUse -port $ServerPort) {
+    Write-Warning "Port $ServerPort is already in use! The server might already be running."
+    $existingProcess = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
+        $_.CommandLine -match "ArtBastard_DMX"
     }
     
-    if ($portInUse) {
-        $needToKillProcess = $true
-        $process = Get-Process -Id $portInUse.OwningProcess -ErrorAction SilentlyContinue
+    if ($existingProcess) {
+        Write-Info "Found existing node process (PID: $($existingProcess.Id))"
+        $shouldTerminate = Read-Host "Do you want to terminate the existing process and continue? (y/n)"
         
-        if ($process) {
-            Write-Host "   ❌ Port $port is in use by $($process.ProcessName) (PID: $($process.Id)). Attempting to kill..."
+        if ($shouldTerminate -eq "y") {
             try {
-                Stop-Process -Id $process.Id -Force
-                Write-Host "     ✅ Process killed successfully."
+                Stop-Process -Id $existingProcess.Id -Force
+                Write-Success "Terminated existing process"
+                # Give some time for the port to be released
+                Start-Sleep -Seconds 1
             } catch {
-                Write-ColorOutput Yellow "     ⚠️ Failed to kill process: $_"
+                Write-Error "Failed to terminate process: $_"
+                exit 1
             }
         } else {
-            Write-ColorOutput Yellow "   ⚠️ Port $port is in use but couldn't identify the process."
+            Write-Info "Startup aborted by user. The existing server will continue running."
+            exit 0
         }
+    }
+}
+
+# Clean up any old log files
+if (Test-Path $LogFile) {
+    Remove-Item $LogFile -Force
+    Write-Info "Removed old log file"
+}
+
+# Build the project if not skipped
+if (-not $SkipBuild) {
+    Write-Info "Building server..."
+    npm run build
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Build failed with exit code $LASTEXITCODE"
+        exit 1
+    }
+    
+    Write-Success "Build completed"
+} else {
+    Write-Info "Build step skipped"
+}
+
+# Start the server in the background
+Write-Info "Starting server..."
+$serverProcess = Start-Process -FilePath "npm" -ArgumentList "start" -NoNewWindow -PassThru
+
+# Start React app if needed
+if (-not $NoReactApp) {
+    Write-Info "Starting React app..."
+    $reactProcess = Start-Process -FilePath "npm" -ArgumentList "start" -WorkingDirectory (Join-Path $PSScriptRoot "react-app") -NoNewWindow -PassThru
+    Write-Success "React app starting on port $ReactAppPort"
+}
+
+# Wait for server to be ready
+Write-Info "Waiting for server to start (timeout: ${StartTimeout}s)..."
+$startTime = Get-Date
+$serverReady = $false
+
+while (-not $serverReady -and ((Get-Date) - $startTime).TotalSeconds -lt $StartTimeout) {
+    # Check if the server process has exited prematurely
+    if ($serverProcess.HasExited) {
+        Write-Error "Server process exited prematurely with code $($serverProcess.ExitCode)"
+        
+        Write-Info "Checking for common errors..."
+        Write-Warning "Server might have crashed due to the boxen module error. Let's try to fix it..."
+        
+        $fixResult = Fix-BoxenError
+        if ($fixResult) {
+            Write-Info "Attempting to rebuild and restart the server..."
+            npm run build
+            
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Build failed with exit code $LASTEXITCODE"
+                exit 1
+            }
+            
+            # Try starting the server again
+            $serverProcess = Start-Process -FilePath "npm" -ArgumentList "start" -NoNewWindow -PassThru
+            
+            # Reset the timeout
+            $startTime = Get-Date
+        } else {
+            Write-Error "Unable to fix and restart automatically. Please check the error manually."
+            exit 1
+        }
+    }
+
+    if (Test-PortInUse -port $ServerPort) {
+        $serverReady = $true
     } else {
-        Write-Host "   ✅ Port $port is available."
+        Start-Sleep -Milliseconds 500
     }
 }
 
-if ($needToKillProcess) {
-    Write-Host "   🕒 Waiting a few seconds for ports to free up..."
-    Start-Sleep -Seconds 3
-}
-
-# Clean up environment
-Write-Host "🔄 Cleaning up environment..."
-
-# Removing logs
-if (Test-Path "logs") {
-    # Keep backup of original logs
-    if (!(Test-Path "logs_backup")) {
-        New-Item -ItemType Directory -Path "logs_backup" | Out-Null
+if ($serverReady) {
+    Write-Success "Server is up and running on port $ServerPort"
+    
+    # Open browser if both parts are running
+    if (-not $NoReactApp) {
+        Write-Info "Opening browser to http://localhost:$ReactAppPort"
+        Start-Process "http://localhost:$ReactAppPort"
     }
-    
-    Copy-Item -Path "logs\*" -Destination "logs_backup\" -Force -ErrorAction SilentlyContinue
-    
+
+    # Keep script running to manage the processes
+    Write-Info "Press Ctrl+C to shutdown the application..."
     try {
-        Remove-Item -Path "logs\*" -Force -ErrorAction SilentlyContinue
-        Write-Host "   ✅ Cleared logs directory."
-    } catch {
-        Write-ColorOutput Yellow "   ⚠️ Failed to clear logs: $_"
+        while ($true) {
+            Start-Sleep -Seconds 5
+            
+            # Check if processes are still running
+            if (-not $NoReactApp -and $reactProcess -and $reactProcess.HasExited) {
+                Write-Warning "React app process has exited unexpectedly with code $($reactProcess.ExitCode)"
+                
+                # Attempt to restart React app
+                Write-Info "Attempting to restart React app..."
+                $reactProcess = Start-Process -FilePath "npm" -ArgumentList "start" -WorkingDirectory (Join-Path $PSScriptRoot "react-app") -NoNewWindow -PassThru
+            }
+            
+            if ($serverProcess -and $serverProcess.HasExited) {
+                Write-Error "Server process has exited unexpectedly with code $($serverProcess.ExitCode)"
+                
+                # Attempt to restart server
+                Write-Info "Attempting to restart server..."
+                $serverProcess = Start-Process -FilePath "npm" -ArgumentList "start" -NoNewWindow -PassThru
+                
+                # Give it some time to start
+                Start-Sleep -Seconds 3
+            }
+        }
+    } catch [System.Management.Automation.PSInternalException] {
+        # This is likely a Ctrl+C
+        Write-Info "Received shutdown signal..."
+    } finally {
+        Write-Info "Shutting down application..."
+        
+        # Stop the server process if still running
+        if ($serverProcess -and -not $serverProcess.HasExited) {
+            $serverProcess | Stop-Process -Force
+        }
+        
+        # Stop the React app if still running
+        if (-not $NoReactApp -and $reactProcess -and -not $reactProcess.HasExited) {
+            $reactProcess | Stop-Process -Force
+        }
+
+        # Kill any remaining node processes related to our app
+        try {
+            Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
+                $_.CommandLine -match "ArtBastard_DMX"
+            } | ForEach-Object {
+                Stop-Process -Id $_.Id -Force
+            }
+        } catch {
+            Write-Warning "Some processes could not be terminated: $_"
+        }
+        
+        Write-Success "Shutdown complete."
     }
 } else {
-    New-Item -ItemType Directory -Path "logs" | Out-Null
-    Write-Host "   ✅ Created logs directory."
-}
-
-# Clean build artifacts
-Write-Host "🔄 Cleaning build artifacts..."
-$buildDirs = @(
-    ".\node_modules\.vite",
-    ".\react-app\node_modules\.vite", 
-    ".\react-app\dist"
-)
-
-foreach ($dir in $buildDirs) {
-    if (Test-Path $dir) {
-        try {
-            Remove-Item -Path $dir -Recurse -Force -ErrorAction SilentlyContinue
-            Write-Host "   ✅ Removed build directory: $dir"
-        } catch {
-            Write-ColorOutput Yellow "   ⚠️ Failed to remove $dir : $_"
-        }
-    }
-}
-
-# Main installation process
-Write-Host "🔄 Installing dependencies for backend..."
-try {
-    npm install --no-audit --loglevel=error
-    if ($LASTEXITCODE -ne 0) { throw "NPM install failed for backend" }
-    Write-Host "   ✅ Backend dependencies installed."
-} catch {
-    Write-ColorOutput Red "   ❌ Failed to install backend dependencies: $_"
-    Write-ColorOutput Yellow "   🔄 Trying with --force flag..."
-    try {
-        npm install --no-audit --force --loglevel=error
-        if ($LASTEXITCODE -ne 0) { throw "NPM install --force failed for backend" }
-        Write-Host "   ✅ Backend dependencies force-installed."
-    } catch {
-        Write-ColorOutput Red "   ❌ Failed to force-install backend dependencies: $_"
-        Write-ColorOutput Red "   😞 Exiting due to critical installation failure."
-        exit 1
-    }
-}
-
-# Install frontend dependencies
-Write-Host "🔄 Installing dependencies for frontend..."
-try {
-    Set-Location "react-app"
-    npm install --no-audit --loglevel=error
-    if ($LASTEXITCODE -ne 0) { throw "NPM install failed for frontend" }
-    Write-Host "   ✅ Frontend dependencies installed."
-} catch {
-    Write-ColorOutput Red "   ❌ Failed to install frontend dependencies: $_"
-    Write-ColorOutput Yellow "   🔄 Trying with --force flag..."
-    try {
-        npm install --no-audit --force --loglevel=error
-        if ($LASTEXITCODE -ne 0) { throw "NPM install --force failed for frontend" }
-        Write-Host "   ✅ Frontend dependencies force-installed."
-    } catch {
-        Write-ColorOutput Red "   ❌ Failed to force-install frontend dependencies: $_"
-        Write-ColorOutput Red "   😞 Exiting due to critical installation failure."
-        exit 1
-    }
-    Set-Location ".."
-}
-Set-Location ".."
-
-# Build backend
-Write-Host "🔄 Building backend..."
-try {
-    npm run build
-    if ($LASTEXITCODE -ne 0) { throw "Backend build failed" }
-    Write-Host "   ✅ Backend built successfully."
-} catch {
-    Write-ColorOutput Yellow "   ⚠️ Backend build failed: $_"
-    Write-ColorOutput Yellow "   🔄 Trying build without typechecking..."
-    try {
-        node build-without-typechecking.js
-        Write-Host "   ✅ Backend built without typechecking."
-    } catch {
-        Write-ColorOutput Red "   ❌ All backend build attempts failed: $_"
-        Write-ColorOutput Red "   😞 Exiting due to critical build failure."
-        exit 1
-    }
-}
-
-# Build frontend
-Write-Host "🔄 Building frontend..."
-try {
-    Set-Location "react-app"
-    npm run build
-    if ($LASTEXITCODE -ne 0) { throw "Frontend build failed" }
-    Write-Host "   ✅ Frontend built successfully."
-} catch {
-    Write-ColorOutput Yellow "   ⚠️ Frontend build failed: $_"
-    Write-ColorOutput Yellow "   🔄 Trying build without typechecking..."
-    try {
-        node build-without-ts-checks.js
-        Write-Host "   ✅ Frontend built without typechecking."
-    } catch {
-        Write-ColorOutput Red "   ❌ All frontend build attempts failed: $_"
-        Write-ColorOutput Red "   😞 Exiting due to critical build failure."
-        exit 1
-    }
-}
-Set-Location ".."
-
-# Start server with watchdog
-Write-Host "🔄 Starting server with watchdog..."
-try {
-    # Start the watchdog process
-    Start-Process -FilePath "node" -ArgumentList "watchdog.js" -NoNewWindow
-    Write-Host "   ✅ Watchdog started."
+    Write-Error "Server failed to start within timeout period ($StartTimeout seconds)"
     
-    Write-Host ""
-    Write-ColorOutput Green "╔═══════════════════════════════════════════════════════════════╗"
-    Write-ColorOutput Green "║                  Application Started!                         ║"
-    Write-ColorOutput Green "║                                                               ║"
-    Write-ColorOutput Green "║  ▶ Server will be available at: http://localhost:3001         ║" 
-    Write-ColorOutput Green "║  ▶ Watchdog is monitoring the application                     ║"
-    Write-ColorOutput Green "║  ▶ It will automatically restart if it crashes                ║"
-    Write-ColorOutput Green "╚═══════════════════════════════════════════════════════════════╝"
-    Write-Host ""
+    # Stop processes
+    if ($serverProcess -and -not $serverProcess.HasExited) {
+        $serverProcess | Stop-Process -Force
+    }
     
-    # Open browser
-    Start-Process "http://localhost:3001"
+    if (-not $NoReactApp -and $reactProcess -and -not $reactProcess.HasExited) {
+        $reactProcess | Stop-Process -Force
+    }
     
-    Write-Host "Press any key to terminate the application and exit..."
-    $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    
-    # Clean up when exiting
-    Write-Host "🔄 Shutting down application..."
-    Get-Process -Name "node" | Where-Object { $_.MainWindowTitle -match "ArtBastard" -or $_.CommandLine -match "watchdog" } | Stop-Process -Force
-    Write-Host "✅ Shutdown complete."
-} catch {
-    Write-ColorOutput Red "   ❌ Failed to start application: $_"
     exit 1
 }
