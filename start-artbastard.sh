@@ -50,6 +50,24 @@ echo "║                                                          ║"
 echo "╚══════════════════════════════════════════════════════════╝${Color_Off}"
 echo ""
 
+# --- Clean Project & Install Dependencies ---
+write_info "Cleaning root node_modules and package-lock.json..."
+rm -rf node_modules package-lock.json
+write_success "Root cleaning complete."
+
+write_info "Cleaning react-app node_modules and package-lock.json..."
+rm -rf "$SCRIPT_DIR/react-app/node_modules" "$SCRIPT_DIR/react-app/package-lock.json"
+write_success "React-app cleaning complete."
+
+write_info "Reinstalling all dependencies..."
+if npm run install-all; then
+    write_success "All dependencies installed successfully."
+else
+    write_error "Dependency installation failed. Please check output above."
+    exit 1
+fi
+echo ""
+
 # --- Kill Existing Processes (Optional) ---
 for port in $SERVER_PORT $REACT_APP_PORT; do
     if test_port_in_use $port; then
@@ -93,7 +111,7 @@ fi
 # --- Build Frontend (React App) ---
 write_info "Building React app..."
 cd "$SCRIPT_DIR/react-app" || exit
-if npm run build; then
+if npx tsc && npx vite build; then # Changed to use npx
     write_success "React app build successful."
 else
     write_error "React app build failed. Please check the output above."
@@ -119,7 +137,7 @@ fi
 # --- Start React App (Development Server) ---
 write_info "Starting React app development server in the background..."
 cd "$SCRIPT_DIR/react-app" || exit
-npm start > "$SCRIPT_DIR/react-app-dev-server.log" 2>&1 &
+npx vite > "$SCRIPT_DIR/react-app-dev-server.log" 2>&1 & # Changed to use npx
 REACT_APP_PID=$!
 sleep 5 # Give React app dev server time to start
 
