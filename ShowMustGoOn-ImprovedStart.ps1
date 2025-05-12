@@ -208,13 +208,172 @@ if (-not $SkipBuild) {
 
 # Start the server in the background
 Write-Info "Starting server..."
-$serverProcess = Start-Process -FilePath "npm" -ArgumentList "start" -NoNewWindow -PassThru
+
+# Use cmd.exe to run npm commands with persistent execution
+function Start-NpmProcess {
+    param(
+        [string]$Command,
+        [string]$WorkingDirectory = $PSScriptRoot,
+        [switch]$UseNodemon = $false
+    )
+    
+    Write-Info "Running npm $Command in $WorkingDirectory"
+    
+    # Special handling for React app startup vs server startup
+    $isReactApp = $WorkingDirectory.EndsWith("react-app")
+    
+    # For server start, use node with -r option to prevent immediate exit
+    if ($Command -eq "start" -and -not $UseNodemon -and -not $isReactApp) {
+        try {
+            # Try using a batch file approach for more stability
+            $batchFile = Join-Path $env:TEMP "ArtBastardDMX_StartServer.bat"
+            $batchContent = @"
+@echo off
+cd /d "$WorkingDirectory"
+echo Starting ArtBastard DMX server...
+node ./dist/main.js
+pause
+"@
+            $batchContent | Out-File -FilePath $batchFile -Encoding ascii -Force
+            Write-Info "Created batch launcher: $batchFile"
+            
+            $process = Start-Process -FilePath $batchFile -NoNewWindow -PassThru
+            return $process
+        } catch {
+            Write-Warning "Batch file approach failed: $($_.Exception.Message)"
+            # Fall through to standard approach
+        }
+    }
+    
+    # Handle React app specially to make sure we use npm start directly
+    if ($isReactApp -and $Command -eq "start") {
+        $processArgs = "/k cd `"$WorkingDirectory`" && npm start"
+        try {
+            $process = Start-Process -FilePath "cmd.exe" -ArgumentList $processArgs -NoNewWindow -PassThru
+            return $process
+        } catch {
+            Write-Error "Failed to start React app: $($_.Exception.Message)"
+            return $null
+        }
+    }
+    
+    # Standard npm command execution for other cases
+    $processArgs = "/c cd `"$WorkingDirectory`" && npm $Command"
+    
+    try {
+        $process = Start-Process -FilePath "cmd.exe" -ArgumentList $processArgs -NoNewWindow -PassThru
+        return $process
+    } catch {
+        Write-Error "Failed to start npm process: $($_.Exception.Message)"
+        return $null
+    }
+}
+
+# Start the server using persistent approach
+$serverProcess = $null
+
+# Try multiple approaches to start the server
+$serverStarted = $false
+
+# Approach 1: Try direct node execution
+if (-not $serverStarted) {
+    Write-Info "Starting server with direct node execution..."
+    try {
+        $mainJsPath = Join-Path $PSScriptRoot "dist\main.js"
+        if (Test-Path $mainJsPath) {
+            $cmdArgs = "/k cd /d `"$PSScriptRoot`" && node `"$mainJsPath`""
+            $serverProcess = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -NoNewWindow -PassThru
+            
+            # Give it a moment to start
+            Start-Sleep -Seconds 2
+            
+            if ($null -ne $serverProcess -and -not $serverProcess.HasExited) {
+                $serverStarted = $true
+                Write-Success "Server started successfully with direct node execution"
+            } else {
+                Write-Warning "Direct node execution started but process exited immediately"
+            }
+        } else {
+            Write-Warning "Could not find main.js at $mainJsPath"
+        }
+    } catch {
+        Write-Warning "Error starting with direct node execution: $($_.Exception.Message)"
+    }
+}
+
+# Approach 2: Use npm start
+if (-not $serverStarted) {
+    Write-Info "Trying npm start..."
+    try {
+        $cmdArgs = "/k cd /d `"$PSScriptRoot`" && npm start"
+        $serverProcess = Start-Process -FilePath "cmd.exe" -ArgumentList $cmdArgs -NoNewWindow -PassThru
+        
+        # Give it a moment to start
+        Start-Sleep -Seconds 2
+        
+        if ($null -ne $serverProcess -and -not $serverProcess.HasExited) {
+            $serverStarted = $true
+            Write-Success "Server started successfully with npm start"
+        } else {
+            Write-Warning "npm start process exited immediately"
+        }
+    } catch {
+        Write-Warning "Error starting with npm start: $($_.Exception.Message)"
+    }
+}
+
+# Approach 3: Create a temporary batch file that will keep running
+if (-not $serverStarted) {
+    Write-Info "Using batch file approach for server start..."
+    try {
+        $batchFile = Join-Path $env:TEMP "ArtBastardDMX_StartServer.bat"
+        $batchContent = @"
+@echo off
+echo ArtBastard DMX Server
+cd /d "$PSScriptRoot"
+echo Starting server...
+node ./dist/main.js
+echo Server process ended, press any key to close this window.
+pause > nul
+"@
+        $batchContent | Out-File -FilePath $batchFile -Encoding ascii -Force
+        Write-Info "Created batch launcher: $batchFile"
+        
+        $serverProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/k `"$batchFile`"" -NoNewWindow -PassThru
+        
+        # Give it a moment to start
+        Start-Sleep -Seconds 2
+        
+        if ($null -ne $serverProcess -and -not $serverProcess.HasExited) {
+            $serverStarted = $true
+            Write-Success "Server started successfully with batch file approach"
+        } else {
+            Write-Warning "Batch file approach failed - process exited immediately"
+        }
+    } catch {
+        Write-Warning "Error using batch file approach: $($_.Exception.Message)"
+    }
+}
+
+if (-not $serverStarted) {
+    Write-Error "All server start methods failed. Please try starting the server manually."
+    exit 1
+}
 
 # Start React app if needed
 if (-not $NoReactApp) {
     Write-Info "Starting React app..."
-    $reactProcess = Start-Process -FilePath "npm" -ArgumentList "start" -WorkingDirectory (Join-Path $PSScriptRoot "react-app") -NoNewWindow -PassThru
-    Write-Success "React app starting on port $ReactAppPort"
+    $reactAppDir = Join-Path $PSScriptRoot "react-app"
+    
+    # Start React app using cmd.exe wrapper (use standard npm start for React)
+    $reactProcess = Start-NpmProcess -Command "start" -WorkingDirectory $reactAppDir
+    
+    if ($null -eq $reactProcess) {
+        Write-Warning "Failed to start React app. You may need to start it manually:"
+        Write-Warning "cd '$reactAppDir' && npm start"
+    } else {
+        Write-Success "React app starting on port $ReactAppPort"
+    }
 }
 
 # Wait for server to be ready
@@ -222,32 +381,69 @@ Write-Info "Waiting for server to start (timeout: ${StartTimeout}s)..."
 $startTime = Get-Date
 $serverReady = $false
 
+# If the server process is already running and confirmed, consider it ready
+if ($serverStarted) {
+    # Give the server a bit more time to fully initialize
+    Start-Sleep -Seconds 3
+    $serverReady = $true
+    Write-Info "Server process is running, considering it ready"
+} 
+
 while (-not $serverReady -and ((Get-Date) - $startTime).TotalSeconds -lt $StartTimeout) {
     # Check if the server process has exited prematurely
     if ($serverProcess.HasExited) {
-        Write-Error "Server process exited prematurely with code $($serverProcess.ExitCode)"
+        $exitCode = $serverProcess.ExitCode
+        Write-Error "Server process exited prematurely with code $exitCode"
         
-        Write-Info "Checking for common errors..."
-        Write-Warning "Server might have crashed due to the boxen module error. Let's try to fix it..."
-        
-        $fixResult = Fix-BoxenError
-        if ($fixResult) {
-            Write-Info "Attempting to rebuild and restart the server..."
-            npm run build
+        # If exit code is 0, try launching with a different approach
+        if ($exitCode -eq 0) {
+            Write-Info "Server exited normally. Trying to launch in a different way..."
             
-            if ($LASTEXITCODE -ne 0) {
-                Write-Error "Build failed with exit code $LASTEXITCODE"
+            # Try running with npm directly
+            Write-Info "Attempting direct 'node app' approach..."
+            try {
+                # Look for the main server file
+                $distDir = Join-Path $PSScriptRoot "dist"
+                $mainJsPath = Join-Path $distDir "main.js"
+                
+                if (Test-Path $mainJsPath) {
+                    Write-Info "Starting server with: node $mainJsPath"
+                    $serverProcess = Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd `"$PSScriptRoot`" && node `"$mainJsPath`"" -NoNewWindow -PassThru
+                    # Reset timeout
+                    $startTime = Get-Date
+                } else {
+                    Write-Warning "Could not find main.js in the dist directory"
+                    Write-Error "Cannot restart server - main script not found"
+                    exit 1
+                }
+            } catch {
+                Write-Error "Failed to restart server: $($_.Exception.Message)"
                 exit 1
             }
-            
-            # Try starting the server again
-            $serverProcess = Start-Process -FilePath "npm" -ArgumentList "start" -NoNewWindow -PassThru
-            
-            # Reset the timeout
-            $startTime = Get-Date
         } else {
-            Write-Error "Unable to fix and restart automatically. Please check the error manually."
-            exit 1
+            # For non-zero exit codes, try to fix boxen error
+            Write-Info "Checking for common errors..."
+            Write-Warning "Server might have crashed due to the boxen module error. Let's try to fix it..."
+            
+            $fixResult = Fix-BoxenError
+            if ($fixResult) {
+                Write-Info "Attempting to rebuild and restart the server..."
+                npm run build
+                
+                if ($LASTEXITCODE -ne 0) {
+                    Write-Error "Build failed with exit code $LASTEXITCODE"
+                    exit 1
+                }
+                
+                # Try starting the server again
+                $serverProcess = Start-NpmProcess -Command "start"
+                
+                # Reset the timeout
+                $startTime = Get-Date
+            } else {
+                Write-Error "Unable to fix and restart automatically. Please check the error manually."
+                exit 1
+            }
         }
     }
 
@@ -279,7 +475,7 @@ if ($serverReady) {
                 
                 # Attempt to restart React app
                 Write-Info "Attempting to restart React app..."
-                $reactProcess = Start-Process -FilePath "npm" -ArgumentList "start" -WorkingDirectory (Join-Path $PSScriptRoot "react-app") -NoNewWindow -PassThru
+                $reactProcess = Start-NpmProcess -Command "start" -WorkingDirectory (Join-Path $PSScriptRoot "react-app")
             }
             
             if ($serverProcess -and $serverProcess.HasExited) {
@@ -287,7 +483,7 @@ if ($serverReady) {
                 
                 # Attempt to restart server
                 Write-Info "Attempting to restart server..."
-                $serverProcess = Start-Process -FilePath "npm" -ArgumentList "start" -NoNewWindow -PassThru
+                $serverProcess = Start-NpmProcess -Command "start"
                 
                 # Give it some time to start
                 Start-Sleep -Seconds 3
