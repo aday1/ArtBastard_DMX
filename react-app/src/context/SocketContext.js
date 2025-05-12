@@ -1,5 +1,5 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 // Create context with default values
 const SocketContext = createContext({
@@ -79,5 +79,19 @@ export const SocketProvider = ({ children }) => {
     };
     return (_jsx(SocketContext.Provider, { value: { socket, connected, error, reconnect }, children: children }));
 };
-export const useSocket = () => useContext(SocketContext);
+export const useSocket = () => {
+    // Ensure the store is accessible globally for MIDI functionality
+    React.useEffect(() => {
+        if (typeof window !== 'undefined' && !window.useStore) {
+            // Import dynamically to avoid circular dependencies
+            import('../store').then(module => {
+                window.useStore = module.useStore;
+                console.log('Global store reference initialized in SocketContext');
+            }).catch(err => {
+                console.error('Failed to initialize global store reference:', err);
+            });
+        }
+    }, []);
+    return useContext(SocketContext);
+};
 export default SocketContext;

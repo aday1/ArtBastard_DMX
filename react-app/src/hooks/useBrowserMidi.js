@@ -58,33 +58,77 @@ export const useBrowserMidi = () => {
             const source = event.target?.name || 'Browser MIDI';
             // Handle Note On messages (0x9)
             if (messageType === 0x9) {
-                socket.emit('browserMidiMessage', {
+                const message = {
                     _type: 'noteon',
                     channel,
                     note: data1,
                     velocity: data2,
                     source
-                });
+                };
+                // Send to socket for server processing
+                socket.emit('browserMidiMessage', message);
+                // Also dispatch to local store for MIDI learn
+                try {
+                    if (window.useStore && typeof window.useStore.getState === 'function') {
+                        const { addMidiMessage } = window.useStore.getState();
+                        if (addMidiMessage) {
+                            addMidiMessage(message);
+                            console.log('Dispatched MIDI note-on message to store:', message);
+                        }
+                        else {
+                            console.error('addMidiMessage action not found in store');
+                        }
+                    }
+                    else {
+                        console.error('window.useStore is not properly initialized');
+                    }
+                }
+                catch (err) {
+                    console.error('Error dispatching MIDI message to store:', err);
+                }
             }
             // Handle Note Off messages (0x8)
             else if (messageType === 0x8) {
-                socket.emit('browserMidiMessage', {
+                const message = {
                     _type: 'noteoff',
                     channel,
                     note: data1,
                     velocity: data2,
                     source
-                });
+                };
+                socket.emit('browserMidiMessage', message);
+                // Not dispatching noteoff to local store as we don't need it for MIDI learn
             }
             // Handle Control Change messages (0xB)
             else if (messageType === 0xB) {
-                socket.emit('browserMidiMessage', {
+                const message = {
                     _type: 'cc',
                     channel,
                     controller: data1,
                     value: data2,
                     source
-                });
+                };
+                // Send to socket for server processing
+                socket.emit('browserMidiMessage', message);
+                // Also dispatch to local store for MIDI learn
+                try {
+                    if (window.useStore && typeof window.useStore.getState === 'function') {
+                        const { addMidiMessage } = window.useStore.getState();
+                        if (addMidiMessage) {
+                            addMidiMessage(message);
+                            console.log('Dispatched MIDI CC message to store:', message);
+                        }
+                        else {
+                            console.error('addMidiMessage action not found in store');
+                        }
+                    }
+                    else {
+                        console.error('window.useStore is not properly initialized');
+                    }
+                }
+                catch (err) {
+                    console.error('Error dispatching MIDI message to store:', err);
+                }
             }
         };
         // Add message handlers to all inputs

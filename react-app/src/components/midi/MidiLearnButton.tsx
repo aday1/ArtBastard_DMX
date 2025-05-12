@@ -12,6 +12,7 @@ interface MidiLearnButtonProps {
 export const MidiLearnButton: React.FC<MidiLearnButtonProps> = ({ channelIndex, className }) => {
   const { isLearning, learnStatus, currentLearningChannel, startLearn, cancelLearn } = useMidiLearn()
   const midiMappings = useStore(state => state.midiMappings)
+  const midiMessages = useStore(state => state.midiMessages)
   
   // Check if this channel has a mapping
   const hasMapping = !!midiMappings[channelIndex]
@@ -19,14 +20,27 @@ export const MidiLearnButton: React.FC<MidiLearnButtonProps> = ({ channelIndex, 
   
   // Check if this channel is in learn mode
   const isChannelLearning = isLearning && currentLearningChannel === channelIndex
+
+  // Debug log for current state
+  React.useEffect(() => {
+    if (isChannelLearning) {
+      console.log(`Channel ${channelIndex} is in learn mode. Status: ${learnStatus}`)
+      console.log('Available MIDI messages:', midiMessages.length)
+    }
+  }, [isChannelLearning, learnStatus, channelIndex, midiMessages.length])
   
   // Handle learn button click
   const handleClick = () => {
+    console.log(`MIDI Learn button clicked for channel ${channelIndex}`);
+    console.log(`Current learning state: ${isChannelLearning ? 'Learning' : 'Not learning'}`);
+    
     if (isChannelLearning) {
       // If already learning, cancel
+      console.log(`Cancelling MIDI learn for channel ${channelIndex}`);
       cancelLearn()
     } else {
       // Start learning
+      console.log(`Starting MIDI learn for channel ${channelIndex}`);
       startLearn(channelIndex)
     }
   }

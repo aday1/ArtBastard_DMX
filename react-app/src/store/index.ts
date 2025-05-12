@@ -84,6 +84,7 @@ interface State {
   // MIDI Actions
   startMidiLearn: (channel: number) => void
   cancelMidiLearn: () => void
+  addMidiMessage: (message: any) => void
   addMidiMapping: (dmxChannel: number, mapping: MidiMapping) => void
   removeMidiMapping: (dmxChannel: number) => void
   clearAllMidiMappings: () => void
@@ -272,6 +273,15 @@ export const useStore = create<State>()(
         }
       },
       
+      addMidiMessage: (message) => {
+        // Add the message to the midiMessages array (limit to last 20 messages for performance)
+        const messages = [...get().midiMessages, message].slice(-20)
+        set({ midiMessages: messages })
+        
+        // Log message for debugging
+        console.log('MIDI message received:', message)
+      },
+      
       addMidiMapping: (dmxChannel, mapping) => {
         const midiMappings = { ...get().midiMappings }
         midiMappings[dmxChannel] = mapping
@@ -421,6 +431,19 @@ export const useStore = create<State>()(
         set({ statusMessage: null })
       }
     }),
-    { name: 'artbastard-store' }
+    { name: 'ArtBastard-DMX-Store' }
   )
-)
+);
+
+// Make the store accessible globally for MIDI message handling from non-React contexts
+// TypeScript needs window interface augmentation to allow custom properties
+declare global {
+  interface Window {
+    useStore: typeof useStore;
+  }
+}
+
+// Assign store to window in non-SSR environments
+if (typeof window !== 'undefined') {
+  window.useStore = useStore;
+}

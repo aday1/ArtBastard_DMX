@@ -140,6 +140,13 @@ export const useStore = create()(devtools((set, get) => ({
             });
         }
     },
+    addMidiMessage: (message) => {
+        // Add the message to the midiMessages array (limit to last 20 messages for performance)
+        const messages = [...get().midiMessages, message].slice(-20);
+        set({ midiMessages: messages });
+        // Log message for debugging
+        console.log('MIDI message received:', message);
+    },
     addMidiMapping: (dmxChannel, mapping) => {
         const midiMappings = { ...get().midiMappings };
         midiMappings[dmxChannel] = mapping;
@@ -269,4 +276,8 @@ export const useStore = create()(devtools((set, get) => ({
     clearStatusMessage: () => {
         set({ statusMessage: null });
     }
-}), { name: 'artbastard-store' }));
+}), { name: 'ArtBastard-DMX-Store' }));
+// Assign store to window in non-SSR environments
+if (typeof window !== 'undefined') {
+    window.useStore = useStore;
+}

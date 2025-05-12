@@ -6,6 +6,7 @@ import { Navbar } from './Navbar'
 import { StatusMessage } from './StatusMessage'
 import { NetworkStatus } from './NetworkStatus'
 import FancyQuotes from './FancyQuotes'
+import MidiDebugger from '../midi/MidiDebugger'
 import styles from './Layout.module.scss'
 
 interface LayoutProps {
@@ -48,6 +49,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <main className={styles.contentArea}>
             {children}
           </main>
+
+          {/* Add MIDI Debugger for troubleshooting */}
+          <MidiDebugger />
         </div>
       </div>
       

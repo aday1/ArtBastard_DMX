@@ -9,6 +9,13 @@ function App() {
   const fetchInitialState = useStore((state) => state.fetchInitialState)
 
   useEffect(() => {
+    // Initialize global store reference
+    if (typeof window !== 'undefined' && !window.useStore) {
+      window.useStore = useStore;
+      console.log('Global store reference initialized in App component');
+    }
+    
+    // Fetch initial state
     fetchInitialState()
   }, [fetchInitialState])
 

@@ -42,8 +42,10 @@ export const useMidiLearn = () => {
     // Reset learn status after timeout
     useEffect(() => {
         if (learnStatus === 'timeout' || learnStatus === 'success') {
+            console.log(`Learn status changed to ${learnStatus}, will reset to idle in 3 seconds`);
             const resetTimeout = window.setTimeout(() => {
                 setLearnStatus('idle');
+                console.log('Learn status reset to idle');
             }, 3000);
             return () => window.clearTimeout(resetTimeout);
         }
@@ -54,6 +56,7 @@ export const useMidiLearn = () => {
             const latestMessage = midiMessages[midiMessages.length - 1];
             // Only process if we're in learning mode
             if (learnStatus === 'learning') {
+                console.log('Processing message for MIDI learn:', latestMessage);
                 // Handle only note on and cc messages for mapping
                 if (latestMessage._type === 'noteon' || latestMessage._type === 'cc') {
                     let mapping;
@@ -62,12 +65,14 @@ export const useMidiLearn = () => {
                             channel: latestMessage.channel,
                             note: latestMessage.note
                         };
+                        console.log('Creating note mapping:', mapping);
                     }
                     else { // cc
                         mapping = {
                             channel: latestMessage.channel,
                             controller: latestMessage.controller
                         };
+                        console.log('Creating CC mapping:', mapping);
                     }
                     // Add the mapping
                     addMidiMapping(midiLearnChannel, mapping);

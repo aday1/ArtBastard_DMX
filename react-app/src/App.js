@@ -8,6 +8,12 @@ import MainPage from './pages/MainPage';
 function App() {
     const fetchInitialState = useStore((state) => state.fetchInitialState);
     useEffect(() => {
+        // Initialize global store reference
+        if (typeof window !== 'undefined' && !window.useStore) {
+            window.useStore = useStore;
+            console.log('Global store reference initialized in App component');
+        }
+        // Fetch initial state
         fetchInitialState();
     }, [fetchInitialState]);
     return (_jsx(ThemeProvider, { children: _jsx(SocketProvider, { children: _jsx(Layout, { children: _jsx(MainPage, {}) }) }) }));
