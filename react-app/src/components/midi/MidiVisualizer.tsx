@@ -26,7 +26,10 @@ export const MidiVisualizer: React.FC = () => {
   const [messages, setMessages] = useState<MidiMessage[]>([])
   const [activeNotes, setActiveNotes] = useState<{[key: string]: ActiveNote}>({})
   const theme = useStore(state => state.theme)
-  const { addMidiMessage: addMidiMessageToStore } = useStore(state => ({ addMidiMessage: state.addMidiMessage }));
+  const { addMidiMessage: addMidiMessageToStore, reportOscActivity } = useStore(state => ({
+    addMidiMessage: state.addMidiMessage,
+    reportOscActivity: state.reportOscActivity,
+  }));
 
   // Keep only last 100 messages for the visualizer's local list
   const addMessageToLocalList = useCallback((msg: MidiMessage) => {
@@ -68,11 +71,20 @@ export const MidiVisualizer: React.FC = () => {
       }
     }
 
+    const handleOscActivity = (data: { channelIndex: number; value: number }) => {
+      if (reportOscActivity) {
+        reportOscActivity(data.channelIndex, data.value);
+      }
+    };
+
     socket.on('midiMessage', handleMidiMessage)
+    socket.on('oscChannelActivity', handleOscActivity)
+
     return () => {
       socket.off('midiMessage', handleMidiMessage)
+      socket.off('oscChannelActivity', handleOscActivity)
     }
-  }, [socket, addMessageToLocalList, addMidiMessageToStore, setActiveNotes]) // setActiveNotes added as it's used in handleMidiMessage
+  }, [socket, addMessageToLocalList, addMidiMessageToStore, reportOscActivity, setActiveNotes]) // setActiveNotes added as it's used in handleMidiMessage
 
   // Clean up stale notes (over 2 seconds old)
   useEffect(() => {

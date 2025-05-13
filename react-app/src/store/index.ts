@@ -36,6 +36,11 @@ export interface ArtNetConfig {
   base_refresh_interval: number
 }
 
+export interface OscActivity {
+  value: number // Float value 0.0 to 1.0
+  timestamp: number // Timestamp of the last message
+}
+
 interface State {
   // DMX State
   dmxChannels: number[]
@@ -66,6 +71,7 @@ interface State {
   theme: 'artsnob' | 'standard' | 'minimal'
   darkMode: boolean
   statusMessage: { text: string; type: 'success' | 'error' | 'info' } | null
+  oscActivity: Record<number, OscActivity> // Added: channelIndex -> activity
   
   // Socket state
   socket: Socket | null
@@ -81,6 +87,7 @@ interface State {
   deselectAllChannels: () => void
   invertChannelSelection: () => void
   setOscAssignment: (channelIndex: number, address: string) => void
+  reportOscActivity: (channelIndex: number, value: number) => void // Added action
   
   // MIDI Actions
   startMidiLearn: (channel: number) => void
@@ -140,6 +147,7 @@ export const useStore = create<State>()(
       theme: 'artsnob',
       darkMode: true,
       statusMessage: null,
+      oscActivity: {}, // Initialize oscActivity
       
       socket: null,
       setSocket: (socket) => set({ socket }),
@@ -443,6 +451,25 @@ export const useStore = create<State>()(
             console.error('Failed to update OSC assignment:', error);
             get().showStatusMessage('Failed to update OSC assignment', 'error');
           });
+      },
+
+      reportOscActivity: (channelIndex, value) => {
+        set(state => ({
+          oscActivity: {
+            ...state.oscActivity,
+            [channelIndex]: { value, timestamp: Date.now() }
+          }
+        }));
+        // Optional: Clear activity after a short period if not continuously updated
+        // setTimeout(() => {
+        //   set(state => {
+        //     const newActivity = { ...state.oscActivity };
+        //     if (newActivity[channelIndex] && newActivity[channelIndex].timestamp === get().oscActivity[channelIndex]?.timestamp) {
+        //       delete newActivity[channelIndex];
+        //     }
+        //     return { oscActivity: newActivity };
+        //   });
+        // }, 2000); // Clear after 2 seconds if no new message
       }
     }),
     { name: 'ArtBastard-DMX-Store' }

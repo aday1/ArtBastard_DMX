@@ -120,3 +120,102 @@
 .valueHex, .valuePercent {
   opacity: 0.7;
 }
+
+.dmxChannel {
+  border: 1px solid #444;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  background-color: #333;
+  color: #eee;
+  width: 300px; /* Or as desired */
+}
+
+.channelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.channelName {
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.nameInput {
+  font-weight: bold;
+  background-color: #555;
+  color: #eee;
+  border: 1px solid #666;
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+.detailsButton {
+  background-color: #555;
+  color: #eee;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.detailsButton:hover {
+  background-color: #666;
+}
+
+.slider {
+  width: 100%;
+  margin-bottom: 5px;
+}
+
+.valueDisplay {
+  text-align: right;
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.detailsPanel {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #444;
+}
+
+.oscControl {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.oscLabel {
+  margin-right: 8px;
+  font-size: 0.9em;
+}
+
+.oscAddressInput {
+  flex-grow: 1;
+  background-color: #555;
+  color: #eee;
+  border: 1px solid #666;
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-size: 0.9em;
+  transition: background-color 0.1s ease-in-out; /* For smooth flash */
+}
+
+.oscAddressInput.oscActive {
+  background-color: #77aaff; /* Or any color to indicate activity */
+}
+
+.oscActivityDisplay {
+  font-size: 0.85em;
+  color: #bbb;
+  margin-top: 5px;
+}
+
+.oscTimestamp {
+  margin-left: 8px;
+  font-size: 0.9em;
+  color: #999;
+}

@@ -28,6 +28,7 @@ export const useStore = create()(devtools((set, get) => ({
     theme: 'artsnob',
     darkMode: true,
     statusMessage: null,
+    oscActivity: {},
     socket: null,
     setSocket: (socket) => set({ socket }),
     // Actions
@@ -275,6 +276,35 @@ export const useStore = create()(devtools((set, get) => ({
     },
     clearStatusMessage: () => {
         set({ statusMessage: null });
+    },
+    setOscAssignment: (channelIndex, address) => {
+        const currentAssignments = get().oscAssignments;
+        const newAssignments = [...currentAssignments];
+        newAssignments[channelIndex] = address;
+        set({ oscAssignments: newAssignments });
+        axios.post('/api/osc/assignment', { channel: channelIndex, address })
+            .catch(error => {
+            console.error('Failed to update OSC assignment:', error);
+            get().showStatusMessage('Failed to update OSC assignment', 'error');
+        });
+    },
+    reportOscActivity: (channelIndex, value) => {
+        set(state => ({
+            oscActivity: {
+                ...state.oscActivity,
+                [channelIndex]: { value, timestamp: Date.now() }
+            }
+        }));
+        // Optional: Clear activity after a short period if not continuously updated
+        // setTimeout(() => {
+        //   set(state => {
+        //     const newActivity = { ...state.oscActivity };
+        //     if (newActivity[channelIndex] && newActivity[channelIndex].timestamp === get().oscActivity[channelIndex]?.timestamp) {
+        //       delete newActivity[channelIndex];
+        //     }
+        //     return { oscActivity: newActivity };
+        //   });
+        // }, 2000); // Clear after 2 seconds if no new message
     }
 }), { name: 'ArtBastard-DMX-Store' }));
 // Assign store to window in non-SSR environments

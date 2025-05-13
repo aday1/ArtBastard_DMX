@@ -310,12 +310,45 @@ function initOsc(io: Server) {
             io.emit('oscStatus', { status: 'error', message: error.message });
         });
 
-        oscPort.on("message", (oscMsg: OscMessage) => {
-            log('Received OSC message', 'OSC', { message: oscMsg });
+        oscPort.on("message", (oscMsg: OscMessage, timeTag: any, info: any) => {
+            log('Raw OSC message received', 'OSC', { address: oscMsg.address, args: oscMsg.args, info });
+
+            // Emit raw message for general purpose client-side handling if needed
             io.emit('oscMessage', {
                 address: oscMsg.address,
                 args: oscMsg.args,
                 timestamp: Date.now()
+            });
+
+            // Process for DMX channel activity
+            oscAssignments.forEach((assignedAddress, channelIndex) => {
+                if (oscMsg.address === assignedAddress && oscMsg.args.length > 0) {
+                    let value = 0.0;
+                    const firstArg = oscMsg.args[0];
+
+                    if (typeof firstArg === 'number') {
+                        value = parseFloat(firstArg.toString());
+                    } else if (typeof firstArg === 'object' && firstArg !== null && 'value' in firstArg && typeof (firstArg as any).value === 'number') {
+                        value = parseFloat((firstArg as any).value.toString());
+                    } else {
+                        log('OSC argument for matched address is not a recognized number format', 'OSC', { address: oscMsg.address, arg: firstArg });
+                        return; // Skip if argument is not a number or expected object
+                    }
+
+                    // Normalize value to 0.0 - 1.0 (assuming it might come in various ranges, e.g. 0-127, 0-255)
+                    // For now, let's assume if it's > 1, it might be from a 0-127 or 0-255 range.
+                    // This normalization logic might need adjustment based on typical OSC sources.
+                    if (value > 1.0) { // A simple heuristic, might need refinement
+                        if (value <= 127.0) value = value / 127.0; // Common MIDI-like range
+                        else if (value <= 255.0) value = value / 255.0; // Common DMX-like range
+                        // Add other normalizations if needed
+                    }
+                    
+                    value = Math.max(0.0, Math.min(1.0, value)); // Clamp to 0.0-1.0
+
+                    log(`OSC activity for DMX ${channelIndex + 1} (${assignedAddress}): ${value}`, 'OSC', { args: oscMsg.args });
+                    io.emit('oscChannelActivity', { channelIndex, value });
+                }
             });
         });
 
