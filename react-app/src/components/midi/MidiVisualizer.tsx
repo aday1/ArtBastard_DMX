@@ -26,9 +26,10 @@ export const MidiVisualizer: React.FC = () => {
   const [messages, setMessages] = useState<MidiMessage[]>([])
   const [activeNotes, setActiveNotes] = useState<{[key: string]: ActiveNote}>({})
   const theme = useStore(state => state.theme)
+  const { addMidiMessage: addMidiMessageToStore } = useStore(state => ({ addMidiMessage: state.addMidiMessage }));
 
-  // Keep only last 100 messages
-  const addMessage = useCallback((msg: MidiMessage) => {
+  // Keep only last 100 messages for the visualizer's local list
+  const addMessageToLocalList = useCallback((msg: MidiMessage) => {
     setMessages(prev => [...prev.slice(-99), { ...msg, timestamp: Date.now() }])
   }, [])
 
@@ -59,14 +60,19 @@ export const MidiVisualizer: React.FC = () => {
         })
       }
 
-      addMessage(msg)
+      addMessageToLocalList(msg); // Update visualizer's local state
+
+      // Also add to global store for MIDI learn and other features
+      if (addMidiMessageToStore) {
+        addMidiMessageToStore(msg);
+      }
     }
 
     socket.on('midiMessage', handleMidiMessage)
     return () => {
       socket.off('midiMessage', handleMidiMessage)
     }
-  }, [socket, addMessage])
+  }, [socket, addMessageToLocalList, addMidiMessageToStore, setActiveNotes]) // setActiveNotes added as it's used in handleMidiMessage
 
   // Clean up stale notes (over 2 seconds old)
   useEffect(() => {

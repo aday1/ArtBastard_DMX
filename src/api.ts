@@ -14,7 +14,10 @@ import {
   loadScenes,
   saveScenes,
   pingArtNetDevice,
-  updateArtNetConfig
+  updateArtNetConfig,
+  updateOscAssignment,
+  getDmxChannels, // Added import
+  getChannelNames // Added import
 } from './index';
 
 const DATA_DIR = path.join(__dirname, '..', 'data');
@@ -101,23 +104,21 @@ apiRouter.get('/health', (req, res) => {
 apiRouter.get('/state', (req, res) => {
   try {
     // Load configuration and scenes
-    const configData = fs.readFileSync(path.join(DATA_DIR, 'config.json'), 'utf-8');
-    const config = JSON.parse(configData);
+    const config = loadConfig(); // loadConfig now also returns oscAssignments
     
     const scenesData = fs.readFileSync(path.join(DATA_DIR, 'scenes.json'), 'utf-8');
     const scenes = JSON.parse(scenesData);
     
-    // Return all state
+    // Return all state, using actual values from server where available
     res.json({
       artNetConfig: config.artNetConfig,
       midiMappings: config.midiMappings,
       scenes,
-      // Add any other state that needs to be initialized
-      dmxChannels: new Array(512).fill(0), // This is placeholder, actual state is in memory
-      oscAssignments: new Array(512).fill('').map((_, i) => `/fixture/DMX${i + 1}`), // Placeholder
-      channelNames: new Array(512).fill('').map((_, i) => `CH ${i + 1}`), // Placeholder
-      fixtures: [], 
-      groups: []    
+      dmxChannels: getDmxChannels(), // Use getter for actual DMX channel state
+      oscAssignments: config.oscAssignments, // Use loaded OSC assignments
+      channelNames: getChannelNames(), // Use getter for actual channel names
+      fixtures: [], // Placeholder - implement fixture loading if needed
+      groups: []    // Placeholder - implement group loading if needed
     });
   } catch (error) {
     log('Error getting initial state', 'ERROR', { error });
@@ -224,6 +225,33 @@ apiRouter.delete('/midi/mappings', (req, res) => {
   } catch (error) {
     log('Error clearing all MIDI mappings', 'ERROR', { error });
     res.status(500).json({ error: `Failed to clear all MIDI mappings: ${error}` });
+  }
+});
+
+// OSC Assignment Endpoint
+apiRouter.post('/osc/assignment', (req, res) => {
+  try {
+    const { channel, address } = req.body;
+
+    if (typeof channel !== 'number' || typeof address !== 'string') {
+      log('Invalid OSC assignment payload', 'ERROR', { body: req.body });
+      res.status(400).json({ error: 'Invalid channel or address' });
+      return;
+    }
+
+    // Call a function (to be created in index.ts) to update server-side OSC assignments
+    const success = updateOscAssignment(channel, address);
+
+    if (success) {
+      log('OSC assignment updated', 'INFO', { channel, address });
+      res.json({ success: true });
+    } else {
+      log('Failed to update OSC assignment on server', 'ERROR', { channel, address });
+      res.status(500).json({ error: 'Failed to update OSC assignment on server' });
+    }
+  } catch (error) {
+    log('Error updating OSC assignment', 'ERROR', { error, body: req.body });
+    res.status(500).json({ error: `Failed to update OSC assignment: ${error}` });
   }
 });
 

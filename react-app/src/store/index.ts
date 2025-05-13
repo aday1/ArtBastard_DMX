@@ -80,6 +80,7 @@ interface State {
   selectAllChannels: () => void
   deselectAllChannels: () => void
   invertChannelSelection: () => void
+  setOscAssignment: (channelIndex: number, address: string) => void
   
   // MIDI Actions
   startMidiLearn: (channel: number) => void
@@ -429,6 +430,19 @@ export const useStore = create<State>()(
       
       clearStatusMessage: () => {
         set({ statusMessage: null })
+      },
+
+      setOscAssignment: (channelIndex, address) => {
+        const currentAssignments = get().oscAssignments;
+        const newAssignments = [...currentAssignments];
+        newAssignments[channelIndex] = address;
+        set({ oscAssignments: newAssignments });
+
+        axios.post('/api/osc/assignment', { channel: channelIndex, address })
+          .catch(error => {
+            console.error('Failed to update OSC assignment:', error);
+            get().showStatusMessage('Failed to update OSC assignment', 'error');
+          });
       }
     }),
     { name: 'ArtBastard-DMX-Store' }

@@ -64,7 +64,7 @@ interface ArtNetConfig {
 
 // Variable declarations
 let dmxChannels: number[] = new Array(512).fill(0);
-let oscAssignments: string[] = new Array(512).fill('').map((_, i) => `/fixture/DMX${i + 1}`);
+let oscAssignments: string[] = new Array(512).fill('').map((_, i) => `/dmx/${i + 1}`); // Updated default pattern
 let channelNames: string[] = new Array(512).fill('').map((_, i) => `CH ${i + 1}`);
 let fixtures: Fixture[] = [];
 let groups: Group[] = [];
@@ -106,19 +106,22 @@ function loadConfig() {
         const parsedConfig = JSON.parse(data);
         artNetConfig = { ...artNetConfig, ...parsedConfig.artNetConfig };
         midiMappings = parsedConfig.midiMappings || {};
+        oscAssignments = parsedConfig.oscAssignments || new Array(512).fill('').map((_, i) => `/dmx/${i + 1}`); // Load OSC assignments or use default
         log('Config loaded', 'INFO', { artNetConfig });
         log('MIDI mappings loaded', 'MIDI', { midiMappings });
+        log('OSC assignments loaded', 'OSC', { oscAssignmentsCount: oscAssignments.length });
         
-        // Return the config for use in the API
         return {
             artNetConfig,
-            midiMappings
+            midiMappings,
+            oscAssignments // Return loaded assignments
         };
     } else {
-        saveConfig();
+        saveConfig(); // This will save defaults including the new oscAssignments default
         return {
             artNetConfig,
-            midiMappings
+            midiMappings,
+            oscAssignments
         };
     }
 }
@@ -126,10 +129,19 @@ function loadConfig() {
 function saveConfig() {
     const configToSave = {
         artNetConfig,
-        midiMappings
+        midiMappings,
+        oscAssignments // Save OSC assignments
     };
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(configToSave, null, 2));
     log('Config saved', 'INFO', { config: configToSave });
+}
+
+export function getDmxChannels(): number[] {
+  return dmxChannels;
+}
+
+export function getChannelNames(): string[] {
+  return channelNames;
 }
 
 // Store active MIDI inputs
@@ -847,6 +859,23 @@ function updateArtNetConfig(config: Partial<ArtNetConfig>) {
             log('Error reinitializing ArtNet with new config', 'ERROR', { error });
         }
     }
+}
+
+// Create an updateOscAssignment function
+export function updateOscAssignment(channelIndex: number, address: string): boolean {
+    if (channelIndex < 0 || channelIndex >= oscAssignments.length) {
+        log('Invalid channel index for OSC assignment', 'ERROR', { channelIndex });
+        return false;
+    }
+    oscAssignments[channelIndex] = address;
+    saveConfig(); // Persist changes
+    // Optionally, broadcast this change to connected clients if they need to be aware of it in real-time
+    if (global.io) {
+        global.io.emit('oscAssignmentsUpdated', { channelIndex, address });
+        log('Emitted oscAssignmentsUpdated event', 'OSC', { channelIndex, address });
+    }
+    log('OSC assignment updated in backend', 'OSC', { channelIndex, address });
+    return true;
 }
 
 // Use proper ES6 named exports
