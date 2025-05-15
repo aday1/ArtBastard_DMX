@@ -77,6 +77,13 @@ export const useMidiLearn = () => {
                     // Add the mapping
                     addMidiMapping(midiLearnChannel, mapping);
                     setLearnStatus('success');
+                    // Alert the MidiDmxProcessor that a new mapping has been created
+                    if (typeof window !== 'undefined') {
+                        console.log(`[MidiLearn] Dispatching midiMappingCreated event for channel ${midiLearnChannel}`);
+                        window.dispatchEvent(new CustomEvent('midiMappingCreated', {
+                            detail: { channel: midiLearnChannel, mapping }
+                        }));
+                    }
                     // Clear the timeout
                     if (timeoutId) {
                         window.clearTimeout(timeoutId);

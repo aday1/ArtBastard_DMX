@@ -51,7 +51,7 @@ interface State {
   // MIDI State
   midiInterfaces: string[]
   activeInterfaces: string[]
-  midiMappings: Record<number, MidiMapping>
+  midiMappings: Record<number, MidiMapping | undefined>
   midiLearnChannel: number | null
   midiLearnScene: string | null
   midiMessages: any[]
@@ -72,6 +72,7 @@ interface State {
   darkMode: boolean
   statusMessage: { text: string; type: 'success' | 'error' | 'info' } | null
   oscActivity: Record<number, OscActivity> // Added: channelIndex -> activity
+  exampleSliderValue: number
   
   // Socket state
   socket: Socket | null
@@ -111,6 +112,7 @@ interface State {
   toggleDarkMode: () => void
   showStatusMessage: (text: string, type: 'success' | 'error' | 'info') => void
   clearStatusMessage: () => void
+  setExampleSliderValue: (value: number) => void
 }
 
 export const useStore = create<State>()(
@@ -148,6 +150,7 @@ export const useStore = create<State>()(
       darkMode: true,
       statusMessage: null,
       oscActivity: {}, // Initialize oscActivity
+      exampleSliderValue: 0,
       
       socket: null,
       setSocket: (socket) => set({ socket }),
@@ -470,6 +473,10 @@ export const useStore = create<State>()(
         //     return { oscActivity: newActivity };
         //   });
         // }, 2000); // Clear after 2 seconds if no new message
+      },
+
+      setExampleSliderValue: (value) => {
+        set({ exampleSliderValue: value });
       }
     }),
     { name: 'ArtBastard-DMX-Store' }

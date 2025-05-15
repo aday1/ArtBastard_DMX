@@ -8,9 +8,17 @@
     "base_refresh_interval": 1000
   },
   "midiMappings": {
+    "1": {
+      "channel": 0,
+      "controller": 91
+    },
     "2": {
       "channel": 0,
-      "controller": 72
+      "controller": 93
+    },
+    "3": {
+      "channel": 0,
+      "controller": 91
     }
   },
   "oscAssignments": [

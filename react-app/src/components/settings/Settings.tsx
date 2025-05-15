@@ -4,14 +4,21 @@ import useStoreUtils from '../../store/storeUtils'
 import { useTheme } from '../../context/ThemeContext'
 import { useSocket } from '../../context/SocketContext'
 import { Socket } from 'socket.io-client'
+import { MidiLearnButton } from '../midi/MidiLearnButton'
 import styles from './Settings.module.scss'
+
+// A unique channel index for the example slider, unlikely to clash with actual DMX channels
+const EXAMPLE_SLIDER_MIDI_CHANNEL_INDEX = 999
 
 export const Settings: React.FC = () => {
   const { theme, setTheme, darkMode, toggleDarkMode } = useTheme()
   const { socket, connected } = useSocket()
   
-  const { artNetConfig } = useStore(state => ({
-    artNetConfig: state.artNetConfig
+  const { artNetConfig, exampleSliderValue, setExampleSliderValue, midiMappings } = useStore(state => ({
+    artNetConfig: state.artNetConfig,
+    exampleSliderValue: state.exampleSliderValue,
+    setExampleSliderValue: state.setExampleSliderValue,
+    midiMappings: state.midiMappings
   }))
   
   const [artNetSettings, setArtNetSettings] = useState({ ...artNetConfig })
@@ -144,6 +151,19 @@ export const Settings: React.FC = () => {
       (socket as any).off('artnetStatus', handleArtNetStatus)
     }
   }, [socket])
+
+  // Effect to update slider if MIDI mapping controls it
+  useEffect(() => {
+    const mapping = midiMappings[EXAMPLE_SLIDER_MIDI_CHANNEL_INDEX]
+    // This effect is primarily for external updates; local changes are handled by onChange
+    // If you want MIDI to directly drive this slider, you'd need to listen to midiMessages
+    // and update exampleSliderValue based on the mapping.
+    // For now, this just ensures the slider reflects the store value.
+  }, [midiMappings, exampleSliderValue]) // Dependency on exampleSliderValue to reflect store changes
+
+  const handleExampleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setExampleSliderValue(Number(event.target.value))
+  }
   
   return (
     <div className={styles.settings}>
@@ -257,6 +277,39 @@ export const Settings: React.FC = () => {
                 {theme === 'standard' && 'Test Connection'}
                 {theme === 'minimal' && 'Test'}
               </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* MIDI Learn Test Section */}
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <h3>
+              {theme === 'artsnob' && 'MIDI Experimentation Chamber'}
+              {theme === 'standard' && 'MIDI Learn Test'}
+              {theme === 'minimal' && 'MIDI Test'}
+            </h3>
+          </div>
+          <div className={styles.cardBody}>
+            <p>
+              Use this slider to test the MIDI learn functionality. Click "MIDI Learn", 
+              move a knob or fader on your MIDI controller, and it should map to this slider.
+            </p>
+            <div className={styles.formGroup} style={{ marginTop: '1rem' }}>
+              <label htmlFor="exampleMidiSlider">Example MIDI Controlled Slider:</label>
+              <input
+                type="range"
+                id="exampleMidiSlider"
+                min="0"
+                max="127"
+                value={exampleSliderValue}
+                onChange={handleExampleSliderChange}
+                className={styles.sliderInput}
+              />
+              <span>{exampleSliderValue}</span>
+            </div>
+            <div style={{ marginTop: '0.5rem' }}>
+              <MidiLearnButton channelIndex={EXAMPLE_SLIDER_MIDI_CHANNEL_INDEX} />
             </div>
           </div>
         </div>

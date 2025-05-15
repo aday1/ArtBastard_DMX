@@ -29,6 +29,7 @@ export const useStore = create()(devtools((set, get) => ({
     darkMode: true,
     statusMessage: null,
     oscActivity: {},
+    exampleSliderValue: 0,
     socket: null,
     setSocket: (socket) => set({ socket }),
     // Actions
@@ -305,6 +306,9 @@ export const useStore = create()(devtools((set, get) => ({
         //     return { oscActivity: newActivity };
         //   });
         // }, 2000); // Clear after 2 seconds if no new message
+    },
+    setExampleSliderValue: (value) => {
+        set({ exampleSliderValue: value });
     }
 }), { name: 'ArtBastard-DMX-Store' }));
 // Assign store to window in non-SSR environments

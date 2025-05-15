@@ -231,6 +231,13 @@
   font-weight: 500; // Make text slightly bolder
 }
 
+// Add this with your other styles
+.midiActive {
+  color: #00ff66 !important;
+  text-shadow: 0 0 5px #00ff66;
+  transition: all 0.2s ease;
+}
+
 @keyframes pulse {
   0% {
     opacity: 0.8;

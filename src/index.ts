@@ -573,6 +573,10 @@ function handleMidiMessage(io: Server, type: 'noteon' | 'cc', msg: MidiMessage) 
         // Ensure controller is defined before using it
         if (msg.controller !== undefined) {
             const controlKey = `${msg.channel}:${msg.controller}`;
+            
+            // Create a mapping of dmx channels to their new values in one go
+            const channelUpdates: Record<number, number> = {};
+            
             for (const [dmxChannel, mapping] of Object.entries(midiMappings)) {
                 // Skip if mapping doesn't have controller property
                 if (mapping.controller === undefined) continue;
@@ -582,11 +586,25 @@ function handleMidiMessage(io: Server, type: 'noteon' | 'cc', msg: MidiMessage) 
                     const channelIdx = parseInt(dmxChannel);
                     // Make sure value is defined before using it
                     if (msg.value !== undefined) {
+                        // Scale MIDI value (0-127) to DMX value (0-255)
                         const scaledValue = Math.floor((msg.value / 127) * 255);
-                        updateDmxChannel(channelIdx, scaledValue);
-                        io.emit('dmxUpdate', { channel: channelIdx, value: scaledValue });
+                        // Store for batch update
+                        channelUpdates[channelIdx] = scaledValue;
                     }
                 }
+            }
+            
+            // Batch update all affected channels at once
+            if (Object.keys(channelUpdates).length > 0) {
+                log(`MIDI CC ${controlKey} updating ${Object.keys(channelUpdates).length} DMX channels`, 'MIDI', { quiet: true });
+                
+                // Update each channel and emit a single batch update
+                Object.entries(channelUpdates).forEach(([channelIdx, value]) => {
+                    updateDmxChannel(parseInt(channelIdx), value);
+                });
+                
+                // Send a single update to clients with all changed channels
+                io.emit('dmxBatchUpdate', channelUpdates);
             }
         }
     } else if (type === 'noteon') {
@@ -684,6 +702,11 @@ function loadScenes() {
     }
 }
 
+// Keep track of ArtNet ping status to reduce log noise
+let lastArtNetStatus = 'unknown';
+let artNetFailureCount = 0;
+const MAX_CONSECUTIVE_FAILURES = 3; // Only log every 3rd failure
+
 function pingArtNetDevice(io: Server, ip?: string) {
     // If ip is provided, use it instead of the config IP
     const targetIp = ip || artNetConfig.ip;
@@ -715,12 +738,31 @@ function pingArtNetDevice(io: Server, ip?: string) {
     
     connectionPromise
         .then(() => {
-            log(`ArtNet device at ${targetIp} is alive`, 'ARTNET');
+            // Only log status changes from unreachable to alive
+            if (lastArtNetStatus !== 'alive') {
+                log(`ArtNet device at ${targetIp} is alive`, 'ARTNET');
+                lastArtNetStatus = 'alive';
+                artNetFailureCount = 0;
+            }
             io.emit('artnetStatus', { ip: targetIp, status: 'alive' });
         })
         .catch((error) => {
             // Don't treat connection failures as errors, just report device as unreachable
-            log(`ArtNet device at ${targetIp} is unreachable`, 'WARN', { error: error.message });
+            artNetFailureCount++;
+            
+            // Only log on status change or every MAX_CONSECUTIVE_FAILURES attempts
+            if (lastArtNetStatus !== 'unreachable' || artNetFailureCount >= MAX_CONSECUTIVE_FAILURES) {
+                log(`ArtNet device at ${targetIp} is unreachable`, 'WARN', { 
+                    error: error.message, 
+                    quiet: lastArtNetStatus === 'unreachable' 
+                });
+                
+                if (artNetFailureCount >= MAX_CONSECUTIVE_FAILURES) {
+                    artNetFailureCount = 0;
+                }
+            }
+            
+            lastArtNetStatus = 'unreachable';
             io.emit('artnetStatus', { 
                 ip: targetIp, 
                 status: 'unreachable',

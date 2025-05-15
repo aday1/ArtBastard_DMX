@@ -25,7 +25,41 @@ const logTypes = {
 
 export type LogType = keyof typeof logTypes;
 
+interface LogOptions {
+  quiet?: boolean; // If true, don't output to console unless it's an error
+  skipFile?: boolean; // If true, skip writing to the log file
+  verboseOnly?: boolean; // If true, only show when verbose mode is enabled
+}
+
+// Default logging level
+let verboseMode = false;
+
+export function setVerboseMode(enabled: boolean): void {
+  verboseMode = enabled;
+  console.log(chalk.cyan(`Verbose logging ${enabled ? 'enabled' : 'disabled'}`));
+}
+
 export function log(message: string, type: LogType = 'INFO', data?: any): void {
+    // Extract options if present
+    const options: LogOptions = {};
+    if (data && typeof data === 'object' && 'quiet' in data) {
+      options.quiet = data.quiet;
+      delete data.quiet;
+    }
+    if (data && typeof data === 'object' && 'skipFile' in data) {
+      options.skipFile = data.skipFile;
+      delete data.skipFile;
+    }
+    if (data && typeof data === 'object' && 'verboseOnly' in data) {
+      options.verboseOnly = data.verboseOnly;
+      delete data.verboseOnly;
+    }
+    
+    // Skip verbose-only logs if not in verbose mode
+    if (options.verboseOnly && !verboseMode) {
+      return;
+    }
+    
     const timestamp = new Date().toISOString();
     const logConfig = logTypes[type] || logTypes.INFO;
     
@@ -33,7 +67,8 @@ export function log(message: string, type: LogType = 'INFO', data?: any): void {
     const consoleMessage = `${chalk.dim(timestamp)} ${logConfig.color(formattedMessage)}${data ? ' ' + chalk.dim(JSON.stringify(data)) : ''}`;
     const fileMessage = `${timestamp} - [${logConfig.label}] ${message}${data ? ' ' + JSON.stringify(data) : ''}\n`;
 
-    if (isLoggingEnabled) {
+    // Write to file unless skipFile is true
+    if (isLoggingEnabled && !options.skipFile) {
         try {
             if (!fs.existsSync(LOGS_DIR)) {
                 fs.mkdirSync(LOGS_DIR, { recursive: true });
@@ -46,7 +81,9 @@ export function log(message: string, type: LogType = 'INFO', data?: any): void {
         }
     }
 
-    if (isConsoleLoggingEnabled) {
+    // Output to console unless quiet mode is requested or console logging is disabled
+    if (isConsoleLoggingEnabled && 
+        (!options.quiet || type === 'ERROR' || type === 'WARN')) {
         if (type === 'ERROR' || type === 'SYSTEM') { // For critical messages, use boxen
             console.log(boxen(consoleMessage, { padding: 1, margin: 1, borderColor: logConfig.colorString, borderStyle: 'round' }));
         } else {

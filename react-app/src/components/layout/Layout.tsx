@@ -7,6 +7,7 @@ import { StatusMessage } from './StatusMessage'
 import { NetworkStatus } from './NetworkStatus'
 import FancyQuotes from './FancyQuotes'
 import MidiDebugger from '../midi/MidiDebugger'
+import MidiMonitor from '../midi/MidiMonitor' // Import the new component
 import styles from './Layout.module.scss'
 
 interface LayoutProps {
@@ -52,6 +53,9 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Add MIDI Debugger for troubleshooting */}
           <MidiDebugger />
+          
+          {/* Add the new MIDI Monitor for visibility */}
+          <MidiMonitor />
         </div>
       </div>
       

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useSocket } from '../../context/SocketContext'
 import { useTheme } from '../../context/ThemeContext'
+import { useBrowserMidi } from '../../hooks/useBrowserMidi'
+import { useStore } from '../../store'
 import styles from './NetworkStatus.module.scss'
 
 interface HealthStatus {
@@ -30,6 +32,20 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [showModal, setShowModal] = useState(false)
+  
+  // Get MIDI devices directly from browser to supplement server health data
+  const { browserInputs, activeBrowserInputs } = useBrowserMidi()
+  const midiMessages = useStore(state => state.midiMessages)
+  const [midiActivity, setMidiActivity] = useState(false)
+
+  // Flash MIDI indicator on new messages
+  useEffect(() => {
+    if (midiMessages && midiMessages.length > 0) {
+      setMidiActivity(true);
+      const timer = setTimeout(() => setMidiActivity(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [midiMessages]);
 
   useEffect(() => {
     const fetchHealth = async () => {
@@ -118,7 +134,9 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
           <i className="fas fa-music"></i>
           <div className={styles.statusInfo}>
             <span className={styles.label}>MIDI Devices</span>
-            <span className={styles.value}>{health?.midiDevicesConnected || 0} connected</span>
+            <span className={styles.value}>
+              Server: {health?.midiDevicesConnected || 0}, Browser: {activeBrowserInputs?.size || 0}
+            </span>
           </div>
         </div>
 
@@ -161,6 +179,9 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
       return result;
     };
     
+    // Calculate total MIDI devices (server + browser)
+    const totalMidiDevices = (health?.midiDevicesConnected || 0) + (activeBrowserInputs?.size || 0);
+    
     return (
       <div className={styles.compactView}>
         <span 
@@ -178,10 +199,10 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
           {connected ? 'Connected' : 'Disconnected'}
         </span>
         <span 
-          className={`${styles.compactItem} ${styles.midiIndicator}`}
-          title={`MIDI Devices Connected: ${health?.midiDevicesConnected || 0}`}
+          className={`${styles.compactItem} ${styles.midiIndicator} ${midiActivity ? styles.midiActive : ''}`}
+          title={`MIDI Devices - Browser: ${activeBrowserInputs?.size || 0}, Server: ${health?.midiDevicesConnected || 0}`}
         >
-          <i className="fas fa-music"></i> {health?.midiDevicesConnected || 0} MIDI
+          <i className="fas fa-music"></i> {totalMidiDevices} MIDI
         </span>
         <span 
           className={`${styles.compactItem} ${styles.artnetIndicator}`}

@@ -219,3 +219,251 @@
   font-size: 0.9em;
   color: #999;
 }
+
+/* MIDI Range Limiting Controls */
+.midiRangeSection {
+  margin-top: 10px;
+  border-top: 1px solid var(--color-channel-border);
+  padding-top: 10px;
+}
+
+.midiRangeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.85em;
+  
+  span {
+    opacity: 0.8;
+  }
+}
+
+.midiRangeToggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  opacity: 0.6;
+  padding: 4px;
+  
+  &:hover {
+    opacity: 1;
+    color: var(--color-primary);
+  }
+}
+
+.midiRangeControls {
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  padding: 8px;
+  font-size: 0.85em;
+}
+
+.rangeRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  
+  label {
+    min-width: 60px;
+    opacity: 0.9;
+    margin-right: 8px;
+  }
+  
+  span {
+    font-size: 0.8em;
+    opacity: 0.7;
+    margin: 0 4px;
+  }
+}
+
+.rangeInputs {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  
+  input[type="number"] {
+    width: 44px;
+    padding: 3px 2px;
+    border: 1px solid var(--color-channel-border);
+    border-radius: 3px;
+    background-color: var(--color-card-bg);
+    color: var(--color-text);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+  }
+}
+
+.rangeSliderContainer {
+  position: relative;
+  height: 20px;
+  flex: 1;
+  margin: 0 4px;
+}
+
+.rangeSliderTrack {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%);
+  border-radius: 2px;
+}
+
+.rangeSliderActiveTrack {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
+
+.rangeSliderLeft, .rangeSliderRight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  height: 100%;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: all;
+  
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    border: 2px solid white;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    z-index: 2;
+    position: relative;
+  }
+  
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    border: 2px solid white;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  &:focus {
+    outline: none;
+    
+    &::-webkit-slider-thumb {
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.3);
+    }
+    
+    &::-moz-range-thumb {
+      box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.3);
+    }
+  }
+}
+
+.rangeActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.resetButton {
+  background-color: transparent;
+  border: 1px solid var(--color-channel-border);
+  color: var(--color-text);
+  padding: 3px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.85em;
+  
+  &:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+  }
+}
+
+.curveSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--color-channel-border);
+  outline: none;
+  border-radius: 2px;
+  
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+  
+  &::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--color-primary);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.rangeValueDisplay {
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 2px 5px;
+  border-radius: 3px;
+  min-width: 30px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text);
+}
+
+.curveTrack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.curveVisualizer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to right, var(--color-primary-light), var(--color-primary));
+  opacity: 0.7;
+}
+
+.curveLabel {
+  font-size: 0.75em;
+  opacity: 0.7;
+  padding: 0 2px;
+  min-width: 25px;
+}
