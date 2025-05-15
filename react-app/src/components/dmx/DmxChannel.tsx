@@ -133,11 +133,25 @@ export const DmxChannel: React.FC<DmxChannelProps> = ({ index }) => {
         console.log(`[DmxChannel ${index}] Handling update event with value:`, customEvent.detail.value);
         // Update DMX channel value directly through the store
         setDmxChannel(index, customEvent.detail.value);
+        
+        // Also manually trigger a UI update for the slider
+        const slider = document.querySelector(`[data-dmx-channel="${index}"] input[type="range"]`) as HTMLInputElement;
+        if (slider) {
+          console.log(`[DmxChannel ${index}] Updating slider element to ${customEvent.detail.value}`);
+          slider.value = customEvent.detail.value.toString();
+          
+          // Dispatch input event to ensure any listeners know the slider was updated
+          const inputEvent = new Event('input', { bubbles: true });
+          slider.dispatchEvent(inputEvent);
+        } else {
+          console.warn(`[DmxChannel ${index}] Slider element not found for manual update`);
+        }
       }
     };
     
     // Add event listener
     window.addEventListener('dmxChannelUpdate', handleDmxChannelUpdate);
+    console.log(`[DmxChannel ${index}] Added dmxChannelUpdate event listener`);
     
     // Clean up
     return () => {
@@ -214,7 +228,7 @@ export const DmxChannel: React.FC<DmxChannelProps> = ({ index }) => {
         {showDetails && <span className={styles.valuePercentOverlay}>{Math.round((value / 255) * 100)}%</span>}
       </div>
 
-      <div className={`${styles.slider} ${showDetails ? styles.expandedSlider : ''}`}>
+      <div className={`${styles.slider} ${showDetails ? styles.expandedSlider : ''}`} data-dmx-channel={index}>
         <input
           type="range"
           min="0"
@@ -222,6 +236,7 @@ export const DmxChannel: React.FC<DmxChannelProps> = ({ index }) => {
           value={value}
           onChange={handleValueChange}
           onClick={(e) => e.stopPropagation()}
+          data-slider-index={index}
         />
       </div>
 

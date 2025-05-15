@@ -8,6 +8,7 @@ import MainPage from './pages/MainPage';
 import { useBrowserMidi } from './hooks/useBrowserMidi'; // Import the hook
 import MidiDmxProcessor from './components/midi/MidiDmxProcessor';
 import MidiDebugHelper from './components/midi/MidiDebugHelper';
+import MidiDmxDebug from './components/midi/MidiDmxDebug';
 import './utils/midiTestUtils'; // Import MIDI testing utilities
 function App() {
     const fetchInitialState = useStore((state) => state.fetchInitialState);
@@ -51,6 +52,6 @@ function App() {
         // Fetch initial state
         fetchInitialState();
     }, [fetchInitialState]);
-    return (_jsx(ThemeProvider, { children: _jsx(SocketProvider, { children: _jsxs(_Fragment, { children: [_jsx(MidiDmxProcessor, {}), _jsx(MidiDebugHelper, {}), _jsx(Layout, { children: _jsx(MainPage, {}) })] }) }) }));
+    return (_jsx(ThemeProvider, { children: _jsx(SocketProvider, { children: _jsxs(_Fragment, { children: [_jsx(MidiDmxProcessor, {}), _jsx(MidiDebugHelper, {}), _jsx(MidiDmxDebug, {}), _jsx(Layout, { children: _jsx(MainPage, {}) })] }) }) }));
 }
 export default App;

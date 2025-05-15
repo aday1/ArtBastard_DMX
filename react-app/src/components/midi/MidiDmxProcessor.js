@@ -79,13 +79,21 @@ export const MidiDmxProcessor = () => {
                     console.log(`[MidiDmxProcessor] Updating DMX channel ${dmxChannel} to ${scaledValue} (from MIDI CC value ${latestMessage.value})`, Object.keys(scalingOptions).length > 0 ? `with custom scaling: ${JSON.stringify(scalingOptions)}` : '');
                     // Update the DMX channel - force value to a number within valid range
                     const boundedValue = Math.max(0, Math.min(255, Math.round(scaledValue)));
+                    console.log(`[MidiDmxProcessor] Setting DMX channel ${dmxChannel} to ${boundedValue} (store update)`);
                     setDmxChannel(dmxChannel, boundedValue);
                     // Dispatch a custom event to ensure the UI updates for this channel
                     if (typeof window !== 'undefined') {
                         console.log(`[MidiDmxProcessor] Dispatching dmxChannelUpdate event for channel ${dmxChannel} with value ${boundedValue}`);
-                        window.dispatchEvent(new CustomEvent('dmxChannelUpdate', {
-                            detail: { channel: dmxChannel, value: boundedValue }
-                        }));
+                        try {
+                            const event = new CustomEvent('dmxChannelUpdate', {
+                                detail: { channel: dmxChannel, value: boundedValue }
+                            });
+                            window.dispatchEvent(event);
+                            console.log(`[MidiDmxProcessor] Event dispatched successfully for channel ${dmxChannel}`);
+                        }
+                        catch (error) {
+                            console.error(`[MidiDmxProcessor] Error dispatching event:`, error);
+                        }
                     }
                 }
             });
@@ -123,12 +131,21 @@ export const MidiDmxProcessor = () => {
                     console.log(`[MidiDmxProcessor] Updating DMX channel ${dmxChannel} to ${scaledValue} (from MIDI note velocity ${latestMessage.velocity})`, Object.keys(scalingOptions).length > 0 ? `with custom scaling: ${JSON.stringify(scalingOptions)}` : '');
                     // Update the DMX channel - force value to a number within valid range
                     const boundedValue = Math.max(0, Math.min(255, Math.round(scaledValue)));
+                    console.log(`[MidiDmxProcessor] Setting DMX channel ${dmxChannel} to ${boundedValue} (store update)`);
                     setDmxChannel(dmxChannel, boundedValue);
                     // Dispatch a custom event to ensure the UI updates for this channel
                     if (typeof window !== 'undefined') {
-                        window.dispatchEvent(new CustomEvent('dmxChannelUpdate', {
-                            detail: { channel: dmxChannel, value: boundedValue }
-                        }));
+                        console.log(`[MidiDmxProcessor] Dispatching dmxChannelUpdate event for channel ${dmxChannel} with value ${boundedValue}`);
+                        try {
+                            const event = new CustomEvent('dmxChannelUpdate', {
+                                detail: { channel: dmxChannel, value: boundedValue }
+                            });
+                            window.dispatchEvent(event);
+                            console.log(`[MidiDmxProcessor] Event dispatched successfully for channel ${dmxChannel}`);
+                        }
+                        catch (error) {
+                            console.error(`[MidiDmxProcessor] Error dispatching event:`, error);
+                        }
                     }
                 }
             });

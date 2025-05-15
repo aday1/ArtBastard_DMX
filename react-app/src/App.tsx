@@ -7,6 +7,7 @@ import MainPage from './pages/MainPage'
 import { useBrowserMidi } from './hooks/useBrowserMidi'; // Import the hook
 import MidiDmxProcessor from './components/midi/MidiDmxProcessor';
 import MidiDebugHelper from './components/midi/MidiDebugHelper';
+import MidiDmxDebug from './components/midi/MidiDmxDebug';
 import './utils/midiTestUtils'; // Import MIDI testing utilities
 
 function App() {
@@ -64,6 +65,8 @@ function App() {
           <MidiDmxProcessor />
           {/* This component provides keyboard shortcuts to test MIDI functionality */}
           <MidiDebugHelper />
+          {/* This component helps debug MIDI to DMX communication issues */}
+          <MidiDmxDebug />
           <Layout children={
             <MainPage />
           } />
