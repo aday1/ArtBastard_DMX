@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import styles from './DmxWebglVisualizer.module.scss';
 // WebGL shader code

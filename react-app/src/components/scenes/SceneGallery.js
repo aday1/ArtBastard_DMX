@@ -1,5 +1,5 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../../store';
 import { useTheme } from '../../context/ThemeContext';
 import { MidiLearnButton } from '../midi/MidiLearnButton';

@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './FancyQuotes.module.scss';
 const luxuryQuotes = [
     // These quotes are deliberately over-the-top, pretentious, and nonsensical
