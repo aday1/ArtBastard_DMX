@@ -192,7 +192,7 @@ export const DmxChannel: React.FC<DmxChannelProps> = ({ index }) => {
 
   return (
     <div
-      className={`${styles.channel} ${isSelected ? styles.selected : ''}`}
+      className={`${styles.channel} ${isSelected ? styles.selected : ''} ${showDetails ? styles.expanded : ''}`}
       onClick={() => toggleChannelSelection(index)}
     >
       <div className={styles.header}>
@@ -209,11 +209,12 @@ export const DmxChannel: React.FC<DmxChannelProps> = ({ index }) => {
         </button>
       </div>
 
-      <div className={styles.value} style={{ backgroundColor: getBackgroundColor() }}>
+      <div className={`${styles.value} ${showDetails ? styles.expandedValue : ''}`} style={{ backgroundColor: getBackgroundColor() }}>
         {value}
+        {showDetails && <span className={styles.valuePercentOverlay}>{Math.round((value / 255) * 100)}%</span>}
       </div>
 
-      <div className={styles.slider}>
+      <div className={`${styles.slider} ${showDetails ? styles.expandedSlider : ''}`}>
         <input
           type="range"
           min="0"

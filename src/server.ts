@@ -262,7 +262,7 @@ try {
   setupSocketHandlers(io);
 
   // Start the server
-  const port = 3001;  // Changed from 3000 to avoid port conflict
+  const port = 3030;  // Changed to 3030 to match the expected port in vite.config.ts
   server.listen(port, () => {
     log(`Server running at http://localhost:${port}`, 'SERVER');
     log(`React app available at http://localhost:${port}`, 'SERVER');

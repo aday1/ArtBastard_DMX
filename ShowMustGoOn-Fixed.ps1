@@ -22,27 +22,8 @@ $global:WebServerLogFile = Join-Path $PSScriptRoot "webserver-issues.log"
 # Process tracking
 $global:ServerRunning = $false
 $global:ReactRunning = $false
-$global:ServerProcess    # MIDI Program Change to #5" | Out-File -FilePath $global:MIDILogFile -Append
-    
-    # ArtNet Status Log entries
-    $logEntry = "$(Get-Date) - ArtNet: Node 192.168.1.100 connected"
-    $logEntry | Out-File -FilePath $global:ArtNetLogFile -Append
-    
-    $logEntry = "$(Get-Date) - ArtNet: Network configured with 2 universes"
-    $logEntry | Out-File -FilePath $global:ArtNetLogFile -Append
-    
-    $logEntry = "$(Get-Date) - ArtNet: Polling detected 3 nodes"
-    $logEntry | Out-File -FilePath $global:ArtNetLogFile -Append
-    
-    # WebServer Log entries
-    $logEntry = "$(Get-Date) - Web Server: Started on port $ServerPort"
-    $logEntry | Out-File -FilePath $global:WebServerLogFile -Append
-    
-    $logEntry = "$(Get-Date) - Web Server: Client connected from 192.168.1.50"
-    $logEntry | Out-File -FilePath $global:WebServerLogFile -Append
-    
-    $logEntry = "$(Get-Date) - Web Server: Scene editor loaded"
-    $logEntry | Out-File -FilePath $global:WebServerLogFile -Appendlobal:ReactProcess = $null
+$global:ServerProcess = $null
+$global:ReactProcess = $null
 
 # Helper Functions
 function Write-ColorOutput($ForegroundColor) {
@@ -175,6 +156,49 @@ module.exports = {
     }
 }
 
+# Function to add demo log entries - uses safe string formatting
+function Add-DemoLogEntries {
+    # DMX Channel Log entries    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logEntry = "$timestamp - DMX: Channel 1 set to 255 (100 percent)"
+    $logEntry | Out-File -FilePath $global:DMXLogFile -Append
+    
+    $logEntry = "$timestamp - DMX: Channel 2 set to 127 (50 percent)"
+    $logEntry | Out-File -FilePath $global:DMXLogFile -Append
+    
+    $logEntry = "$(Get-Date) - DMX: Universe 1, Channels 10-20 set for scene 'BlueWash'"
+    $logEntry | Out-File -FilePath $global:DMXLogFile -Append
+    
+    # MIDI Traffic Log entries
+    $logEntry = "$(Get-Date) - MIDI: Note On C4 (velocity 100)"
+    $logEntry | Out-File -FilePath $global:MIDILogFile -Append
+    
+    $logEntry = "$(Get-Date) - MIDI: CC 7 (Volume) set to 120"
+    $logEntry | Out-File -FilePath $global:MIDILogFile -Append
+    
+    $logEntry = "$(Get-Date) - MIDI: Program Change to #5"
+    $logEntry | Out-File -FilePath $global:MIDILogFile -Append
+    
+    # ArtNet Status Log entries
+    $logEntry = "$(Get-Date) - ArtNet: Node 192.168.1.100 connected"
+    $logEntry | Out-File -FilePath $global:ArtNetLogFile -Append
+    
+    $logEntry = "$(Get-Date) - ArtNet: Network configured with 2 universes"
+    $logEntry | Out-File -FilePath $global:ArtNetLogFile -Append
+    
+    $logEntry = "$(Get-Date) - ArtNet: Polling detected 3 nodes"
+    $logEntry | Out-File -FilePath $global:ArtNetLogFile -Append
+    
+    # WebServer Log entries
+    $logEntry = "$(Get-Date) - Web Server: Started on port $ServerPort"
+    $logEntry | Out-File -FilePath $global:WebServerLogFile -Append
+    
+    $logEntry = "$(Get-Date) - Web Server: Client connected from 192.168.1.50"
+    $logEntry | Out-File -FilePath $global:WebServerLogFile -Append
+    
+    $logEntry = "$(Get-Date) - Web Server: Scene editor loaded"
+    $logEntry | Out-File -FilePath $global:WebServerLogFile -Append
+}
+
 # Function to create our UI panels
 function Initialize-UIPanel {
     Add-Type -AssemblyName System.Windows.Forms
@@ -184,7 +208,7 @@ function Initialize-UIPanel {
     $form = New-Object System.Windows.Forms.Form
     $form.Text = "🎭 $AppName Control Panel 🎭"
     $form.Size = New-Object System.Drawing.Size(1200, 800)
-    $form.StartPosition = "CenterScreen"
+    $form.StartPosition = [System.Windows.Forms.FormStartPosition]::CenterScreen
     $form.BackColor = [System.Drawing.Color]::FromArgb(255, 30, 30, 30)
     $form.ForeColor = [System.Drawing.Color]::White
     $form.Font = New-Object System.Drawing.Font("Segoe UI", 10)
@@ -257,22 +281,106 @@ function Initialize-UIPanel {
     $buttonPanel.Controls.Add($statusLabel)
     
     # Create log panels
-    $dmxLogPanel = Create-LogPanel "🎛️ DMX Channel Traffic" [System.Drawing.Color]::FromArgb(255, 40, 167, 69)
-    $midiLogPanel = Create-LogPanel "🎹 MIDI Traffic" [System.Drawing.Color]::FromArgb(255, 0, 123, 255)
-    $artnetLogPanel = Create-LogPanel "🌐 ArtNet Status" [System.Drawing.Color]::FromArgb(255, 255, 193, 7)
-    $webServerLogPanel = Create-LogPanel "🖥️ WebServer Issues" [System.Drawing.Color]::FromArgb(255, 220, 53, 69)
+    $dmxPanel = New-Object System.Windows.Forms.Panel
+    $dmxPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $dmxPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+    $dmxPanel.BackColor = [System.Drawing.Color]::FromArgb(255, 35, 35, 35)
+    
+    $dmxTitleLabel = New-Object System.Windows.Forms.Label
+    $dmxTitleLabel.Text = "🎛️ DMX Channel Traffic"
+    $dmxTitleLabel.Dock = [System.Windows.Forms.DockStyle]::Top
+    $dmxTitleLabel.Height = 30
+    $dmxTitleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $dmxTitleLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 40, 167, 69)
+    $dmxPanel.Controls.Add($dmxTitleLabel)
+    
+    $global:DmxLogTextBox = New-Object System.Windows.Forms.TextBox
+    $global:DmxLogTextBox.Multiline = $true
+    $global:DmxLogTextBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+    $global:DmxLogTextBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $global:DmxLogTextBox.BackColor = [System.Drawing.Color]::FromArgb(255, 25, 25, 25)
+    $global:DmxLogTextBox.ForeColor = [System.Drawing.Color]::LightGray
+    $global:DmxLogTextBox.Font = New-Object System.Drawing.Font("Consolas", 9)
+    $global:DmxLogTextBox.ReadOnly = $true
+    $dmxPanel.Controls.Add($global:DmxLogTextBox)
+    
+    # MIDI Panel
+    $midiPanel = New-Object System.Windows.Forms.Panel
+    $midiPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $midiPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+    $midiPanel.BackColor = [System.Drawing.Color]::FromArgb(255, 35, 35, 35)
+    
+    $midiTitleLabel = New-Object System.Windows.Forms.Label
+    $midiTitleLabel.Text = "🎹 MIDI Traffic"
+    $midiTitleLabel.Dock = [System.Windows.Forms.DockStyle]::Top
+    $midiTitleLabel.Height = 30
+    $midiTitleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $midiTitleLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 0, 123, 255)
+    $midiPanel.Controls.Add($midiTitleLabel)
+    
+    $global:MidiLogTextBox = New-Object System.Windows.Forms.TextBox
+    $global:MidiLogTextBox.Multiline = $true
+    $global:MidiLogTextBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+    $global:MidiLogTextBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $global:MidiLogTextBox.BackColor = [System.Drawing.Color]::FromArgb(255, 25, 25, 25)
+    $global:MidiLogTextBox.ForeColor = [System.Drawing.Color]::LightGray
+    $global:MidiLogTextBox.Font = New-Object System.Drawing.Font("Consolas", 9)
+    $global:MidiLogTextBox.ReadOnly = $true
+    $midiPanel.Controls.Add($global:MidiLogTextBox)
+    
+    # ArtNet Panel
+    $artnetPanel = New-Object System.Windows.Forms.Panel
+    $artnetPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $artnetPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+    $artnetPanel.BackColor = [System.Drawing.Color]::FromArgb(255, 35, 35, 35)
+    
+    $artnetTitleLabel = New-Object System.Windows.Forms.Label
+    $artnetTitleLabel.Text = "🌐 ArtNet Status"
+    $artnetTitleLabel.Dock = [System.Windows.Forms.DockStyle]::Top
+    $artnetTitleLabel.Height = 30
+    $artnetTitleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $artnetTitleLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 255, 193, 7)
+    $artnetPanel.Controls.Add($artnetTitleLabel)
+    
+    $global:ArtNetLogTextBox = New-Object System.Windows.Forms.TextBox
+    $global:ArtNetLogTextBox.Multiline = $true
+    $global:ArtNetLogTextBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+    $global:ArtNetLogTextBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $global:ArtNetLogTextBox.BackColor = [System.Drawing.Color]::FromArgb(255, 25, 25, 25)
+    $global:ArtNetLogTextBox.ForeColor = [System.Drawing.Color]::LightGray
+    $global:ArtNetLogTextBox.Font = New-Object System.Drawing.Font("Consolas", 9)
+    $global:ArtNetLogTextBox.ReadOnly = $true
+    $artnetPanel.Controls.Add($global:ArtNetLogTextBox)
+    
+    # WebServer Panel
+    $webPanel = New-Object System.Windows.Forms.Panel
+    $webPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $webPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+    $webPanel.BackColor = [System.Drawing.Color]::FromArgb(255, 35, 35, 35)
+    
+    $webTitleLabel = New-Object System.Windows.Forms.Label
+    $webTitleLabel.Text = "🖥️ WebServer Issues"
+    $webTitleLabel.Dock = [System.Windows.Forms.DockStyle]::Top
+    $webTitleLabel.Height = 30
+    $webTitleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
+    $webTitleLabel.ForeColor = [System.Drawing.Color]::FromArgb(255, 220, 53, 69)
+    $webPanel.Controls.Add($webTitleLabel)
+    
+    $global:WebServerLogTextBox = New-Object System.Windows.Forms.TextBox
+    $global:WebServerLogTextBox.Multiline = $true
+    $global:WebServerLogTextBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
+    $global:WebServerLogTextBox.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $global:WebServerLogTextBox.BackColor = [System.Drawing.Color]::FromArgb(255, 25, 25, 25)
+    $global:WebServerLogTextBox.ForeColor = [System.Drawing.Color]::LightGray
+    $global:WebServerLogTextBox.Font = New-Object System.Drawing.Font("Consolas", 9)
+    $global:WebServerLogTextBox.ReadOnly = $true
+    $webPanel.Controls.Add($global:WebServerLogTextBox)
     
     # Add log panels to container
-    $logPanelsContainer.Controls.Add($dmxLogPanel, 0, 0)
-    $logPanelsContainer.Controls.Add($midiLogPanel, 1, 0)
-    $logPanelsContainer.Controls.Add($artnetLogPanel, 0, 1)
-    $logPanelsContainer.Controls.Add($webServerLogPanel, 1, 1)
-    
-    # Store log TextBoxes for access
-    $global:DmxLogTextBox = ($dmxLogPanel.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
-    $global:MidiLogTextBox = ($midiLogPanel.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
-    $global:ArtNetLogTextBox = ($artnetLogPanel.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
-    $global:WebServerLogTextBox = ($webServerLogPanel.Controls | Where-Object { $_ -is [System.Windows.Forms.TextBox] })[0]
+    $logPanelsContainer.Controls.Add($dmxPanel, 0, 0)
+    $logPanelsContainer.Controls.Add($midiPanel, 1, 0)
+    $logPanelsContainer.Controls.Add($artnetPanel, 0, 1)
+    $logPanelsContainer.Controls.Add($webPanel, 1, 1)
     
     # Button event handlers
     $startButton.Add_Click({
@@ -309,9 +417,6 @@ function Initialize-UIPanel {
         }
     })
     
-    # Start log monitoring
-    Start-LogMonitoring
-    
     # Load existing log content into text boxes
     if (Test-Path $global:DMXLogFile) {
         $content = Get-Content -Path $global:DMXLogFile -Raw -ErrorAction SilentlyContinue
@@ -341,37 +446,10 @@ function Initialize-UIPanel {
         }
     }
     
+    # Start log monitoring
+    Start-LogMonitoring
+    
     return $form
-}
-
-# Function to create a styled log panel
-function Create-LogPanel($title, $accentColor) {
-    $panel = New-Object System.Windows.Forms.Panel
-    $panel.Dock = [System.Windows.Forms.DockStyle]::Fill
-    $panel.Padding = New-Object System.Windows.Forms.Padding(10)
-    $panel.BackColor = [System.Drawing.Color]::FromArgb(255, 35, 35, 35)
-    
-    # Add title label
-    $titleLabel = New-Object System.Windows.Forms.Label
-    $titleLabel.Text = $title
-    $titleLabel.Dock = [System.Windows.Forms.DockStyle]::Top
-    $titleLabel.Height = 30
-    $titleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 12, [System.Drawing.FontStyle]::Bold)
-    $titleLabel.ForeColor = $accentColor
-    $panel.Controls.Add($titleLabel)
-    
-    # Add log text box
-    $logTextBox = New-Object System.Windows.Forms.TextBox
-    $logTextBox.Multiline = $true
-    $logTextBox.ScrollBars = [System.Windows.Forms.ScrollBars]::Vertical
-    $logTextBox.Dock = [System.Windows.Forms.DockStyle]::Fill
-    $logTextBox.BackColor = [System.Drawing.Color]::FromArgb(255, 25, 25, 25)
-    $logTextBox.ForeColor = [System.Drawing.Color]::LightGray
-    $logTextBox.Font = New-Object System.Drawing.Font("Consolas", 9)
-    $logTextBox.ReadOnly = $true
-    $panel.Controls.Add($logTextBox)
-    
-    return $panel
 }
 
 # Function to start server and react app
@@ -494,18 +572,15 @@ function Start-LogMonitoring {
         }
     }
     
-    # Start monitoring each log file
-    Start-LogFileWatcher -FilePath $global:DMXLogFile -TextBox $global:DmxLogTextBox
-    Start-LogFileWatcher -FilePath $global:MIDILogFile -TextBox $global:MidiLogTextBox
-    Start-LogFileWatcher -FilePath $global:ArtNetLogFile -TextBox $global:ArtNetLogTextBox
-    Start-LogFileWatcher -FilePath $global:WebServerLogFile -TextBox $global:WebServerLogTextBox
-    
-    # Also monitor the main app log
-    Start-LogFileWatcher -FilePath $LogFile -TextBox $global:WebServerLogTextBox
+    # Create event handlers for log files
+    $watcher1 = Register-FileSystemWatcher -FilePath $global:DMXLogFile -TextBox $global:DmxLogTextBox
+    $watcher2 = Register-FileSystemWatcher -FilePath $global:MIDILogFile -TextBox $global:MidiLogTextBox
+    $watcher3 = Register-FileSystemWatcher -FilePath $global:ArtNetLogFile -TextBox $global:ArtNetLogTextBox
+    $watcher4 = Register-FileSystemWatcher -FilePath $global:WebServerLogFile -TextBox $global:WebServerLogTextBox
 }
 
-# Function to watch a log file for changes
-function Start-LogFileWatcher {
+# Function to watch a log file for changes with simpler event registration
+function Register-FileSystemWatcher {
     param(
         [string]$FilePath,
         [System.Windows.Forms.TextBox]$TextBox
@@ -518,228 +593,44 @@ function Start-LogFileWatcher {
     $watcher.NotifyFilter = [System.IO.NotifyFilters]::LastWrite
     $watcher.EnableRaisingEvents = $true
     
-    # Define the event handler for file changes
-    # Store TextBox and FilePath in script scope variables for the event handler
-    $Script:WatcherTextBoxes = @{}
-    $Script:WatcherTextBoxes[$FilePath] = $TextBox
-    
-    # Define the event handler for file changes
-    Register-ObjectEvent -InputObject $watcher -EventName "Changed" -Action {
-        # Read the new content from the file
-        $filePath = $Event.SourceEventArgs.FullPath
+    # Create a script block for the event
+    $action = {
+        $path = $Event.SourceEventArgs.FullPath
+        $textBoxRef = $Event.MessageData.TextBox
+        
         try {
-            $newContent = Get-Content -Path $filePath -Tail 1 -ErrorAction SilentlyContinue
+            $newLine = Get-Content -Path $path -Tail 1 -ErrorAction SilentlyContinue
             
-            if ($newContent) {
-                # Get the associated textbox from our script scope dictionary
-                $textBox = $Script:WatcherTextBoxes[$filePath]
-                
-                if ($textBox) {
-                    if ($textBox.InvokeRequired) {
-                        $textBox.Invoke([System.Windows.Forms.MethodInvoker]{
-                            $textBox.AppendText("$newContent`r`n")
-                            $textBox.SelectionStart = $textBox.Text.Length
-                            $textBox.ScrollToCaret()
-                        })
-                    } else {
-                        $textBox.AppendText("$newContent`r`n")
-                        $textBox.SelectionStart = $textBox.Text.Length
-                        $textBox.ScrollToCaret()
-                    }
+            if ($newLine) {
+                # This is safer as we're capturing the textbox as an argument
+                if ($textBoxRef.InvokeRequired) {
+                    $textBoxRef.Invoke([System.Windows.Forms.MethodInvoker]{
+                        $textBoxRef.AppendText("$newLine`r`n")
+                        $textBoxRef.SelectionStart = $textBoxRef.Text.Length
+                        $textBoxRef.ScrollToCaret()
+                    })
+                }
+                else {
+                    $textBoxRef.AppendText("$newLine`r`n")
+                    $textBoxRef.SelectionStart = $textBoxRef.Text.Length
+                    $textBoxRef.ScrollToCaret()
                 }
             }
-        } catch {
-            # Ignore errors reading the file
         }
-    } | Out-Null
-}
-
-# Show welcome banner
-Write-Host ""
-Write-Host "╔══════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
-Write-Host "║                                                          ║" -ForegroundColor Magenta
-Write-Host "║         " -ForegroundColor Magenta -NoNewline; Write-Host "🎛️  $AppName Control Panel  🎛️" -ForegroundColor White -NoNewline; Write-Host "         ║" -ForegroundColor Magenta
-Write-Host "║                                                          ║" -ForegroundColor Magenta
-Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
-Write-Host ""
-
-# Fix boxen error if requested or always apply the fix
-if ($FixBoxenError -or $true) { # Always apply the fix
-    $fixResult = Fix-BoxenError
-    if (-not $fixResult) {
-        Write-Warning "Failed to fix boxen error. The server might still crash."
-    }
-}
-
-# Function to add demo log entries
-function Add-DemoLogEntries {
-    # DMX Channel Log entries
-    $logEntry = "$(Get-Date) - DMX: Channel 1 set to 255 (100 pct)"
-    $logEntry | Out-File -FilePath $global:DMXLogFile -Append
-    
-    $logEntry = "$(Get-Date) - DMX: Channel 2 set to 127 (50 pct)"
-    $logEntry | Out-File -FilePath $global:DMXLogFile -Append
-    
-    $logEntry = "$(Get-Date) - DMX: Universe 1, Channels 10-20 set for scene 'BlueWash'"
-    $logEntry | Out-File -FilePath $global:DMXLogFile -Append
-    
-    # MIDI Traffic Log entries
-    $logEntry = "$(Get-Date) - MIDI: Note On C4 (velocity 100)"
-    $logEntry | Out-File -FilePath $global:MIDILogFile -Append
-    
-    $logEntry = "$(Get-Date) - MIDI: CC 7 (Volume) set to 120"
-    $logEntry | Out-File -FilePath $global:MIDILogFile -Append
-    
-    $logEntry = "$(Get-Date) - MIDI: Program Change to #5"
-    $logEntry | Out-File -FilePath $global:MIDILogFile -Append
-    
-    # ArtNet Status Log entries
-    "$(Get-Date) - ArtNet: Node 192.168.1.100 connected" | Out-File -FilePath $global:ArtNetLogFile -Append
-    "$(Get-Date) - ArtNet: Network configured with 2 universes" | Out-File -FilePath $global:ArtNetLogFile -Append
-    "$(Get-Date) - ArtNet: Polling detected 3 nodes" | Out-File -FilePath $global:ArtNetLogFile -Append
-    
-    # WebServer Log entries
-    "$(Get-Date) - Web Server: Started on port $ServerPort" | Out-File -FilePath $global:WebServerLogFile -Append
-    "$(Get-Date) - Web Server: Client connected from 192.168.1.50" | Out-File -FilePath $global:WebServerLogFile -Append
-    "$(Get-Date) - Web Server: Scene editor loaded" | Out-File -FilePath $global:WebServerLogFile -Append
-}
-
-# Initialize log files
-foreach ($logFilePath in @($LogFile, $global:DMXLogFile, $global:MIDILogFile, $global:ArtNetLogFile, $global:WebServerLogFile)) {
-    if (Test-Path $logFilePath) {
-        Remove-Item $logFilePath -Force
-    }
-    # Create empty log files
-    "" | Out-File -FilePath $logFilePath -Force
-}
-
-Write-Info "Log files initialized"
-
-# Check if server port is already in use
-if (Test-PortInUse -port $ServerPort) {
-    Write-Warning "Port $ServerPort is already in use! The server might already be running."
-    $existingProcess = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
-        $_.CommandLine -match "ArtBastard_DMX"
-    }
-    
-    if ($existingProcess) {
-        Write-Info "Found existing node process (PID: $($existingProcess.Id))"
-        $shouldTerminate = Read-Host "Do you want to terminate the existing process and continue? (y/n)"
-        
-        if ($shouldTerminate -eq "y") {
-            try {
-                Stop-Process -Id $existingProcess.Id -Force
-                Write-Success "Terminated existing process"
-                # Give some time for the port to be released
-                Start-Sleep -Seconds 1
-            } catch {
-                Write-Error "Failed to terminate process: $_"
-                exit 1
-            }
-        } else {
-            Write-Info "Startup aborted by user. The existing server will continue running."
-            exit 0
-        }
-    }
-}
-
-# Build the project if not skipped - always build first before launching the UI
-if (-not $SkipBuild) {
-    Write-Info "Building server..."
-    npm run build
-    
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Build failed with exit code $LASTEXITCODE"
-        exit 1
-    }
-    
-    Write-Success "Build completed"
-} else {
-    Write-Info "Build step skipped"
-}
-
-# Add some demo log entries for immediate display
-Add-DemoLogEntries
-
-# Use cmd.exe to run npm commands with persistent execution
-function Start-NpmProcess {
-    param(
-        [string]$Command,
-        [string]$WorkingDirectory = $PSScriptRoot,
-        [switch]$UseNodemon = $false
-    )
-    
-    Write-Info "Running npm $Command in $WorkingDirectory"
-    
-    # Special handling for React app startup vs server startup
-    $isReactApp = $WorkingDirectory.EndsWith("react-app")
-    
-    # For server start, use node with -r option to prevent immediate exit
-    if ($Command -eq "start" -and -not $UseNodemon -and -not $isReactApp) {
-        try {
-            # Try using a batch file approach for more stability
-            $batchFile = Join-Path $env:TEMP "ArtBastardDMX_StartServer.bat"
-            $batchContent = @"
-@echo off
-cd /d "$WorkingDirectory"
-echo Starting ArtBastard DMX server...
-node ./dist/main.js
-pause
-"@
-            $batchContent | Out-File -FilePath $batchFile -Encoding ascii -Force
-            Write-Info "Created batch launcher: $batchFile"
-            
-            $process = Start-Process -FilePath $batchFile -NoNewWindow -PassThru
-            return $process
-        } catch {
-            Write-Warning "Batch file approach failed: $($_.Exception.Message)"
-            # Fall through to standard approach
+        catch {
+            # Simply ignore errors
         }
     }
     
-    # Handle React app specially to make sure we use npm start directly
-    if ($isReactApp -and $Command -eq "start") {
-        $processArgs = "/k cd `"$WorkingDirectory`" && npm start"
-        try {
-            $process = Start-Process -FilePath "cmd.exe" -ArgumentList $processArgs -NoNewWindow -PassThru
-            return $process
-        } catch {
-            Write-Error "Failed to start React app: $($_.Exception.Message)"
-            return $null
-        }
+    # Pass the TextBox as MessageData to the event
+    $messageData = New-Object PSObject -Property @{
+        TextBox = $TextBox
     }
     
-    # Standard npm command execution for other cases
-    $processArgs = "/c cd `"$WorkingDirectory`" && npm $Command"
+    # Register the event with the message data
+    Register-ObjectEvent -InputObject $watcher -EventName Changed -Action $action -MessageData $messageData | Out-Null
     
-    try {
-        $process = Start-Process -FilePath "cmd.exe" -ArgumentList $processArgs -NoNewWindow -PassThru
-        return $process
-    } catch {
-        Write-Error "Failed to start npm process: $($_.Exception.Message)"
-        return $null
-    }
-}
-
-# Main Execution Flow Starts Here
-
-# Create and show the UI
-function Start-Application {
-    # Check for dependencies first
-    Check-Dependencies
-
-    # Create UI
-    $form = Initialize-UIPanel
-    
-    # Show form as dialog - make sure we're returning a System.Windows.Forms.Form object
-    $null = $form.ShowDialog() # Using $null = to suppress the result
-    
-    # When form closes, ensure all processes are stopped
-    if ($global:ServerRunning -or $global:ReactRunning) {
-        Stop-Services
-    }
-    
-    Write-Host "🎭 The Show Must Go On! Application closed. 🎭" -ForegroundColor Cyan
+    return $watcher
 }
 
 # Function to check dependencies
@@ -804,7 +695,103 @@ function Check-Dependencies {
     Set-Location $ProjectDir
 }
 
-# This duplicate function definition has been removed
+# Main application function
+function Start-Application {
+    # Check for dependencies first
+    Check-Dependencies
+
+    # Create UI
+    $form = Initialize-UIPanel
+    
+    # Show form dialog properly - first check if it's a valid form object
+    if ($form -and $form -is [System.Windows.Forms.Form]) {
+        $form.ShowDialog() | Out-Null
+    } else {
+        Write-ErrorLog "Error: Could not create UI form properly. Return value: $form"
+        return
+    }
+    
+    # When form closes, ensure all processes are stopped
+    if ($global:ServerRunning -or $global:ReactRunning) {
+        Stop-Services
+    }
+    
+    Write-Host "🎭 The Show Must Go On! Application closed. 🎭" -ForegroundColor Cyan
+}
+
+# Show welcome banner
+Write-Host ""
+Write-Host "╔══════════════════════════════════════════════════════════╗" -ForegroundColor Magenta
+Write-Host "║                                                          ║" -ForegroundColor Magenta
+Write-Host "║         " -ForegroundColor Magenta -NoNewline; Write-Host "🎛️  $AppName Control Panel  🎛️" -ForegroundColor White -NoNewline; Write-Host "         ║" -ForegroundColor Magenta
+Write-Host "║                                                          ║" -ForegroundColor Magenta
+Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Magenta
+Write-Host ""
+
+# Fix boxen error if requested or always apply the fix
+if ($FixBoxenError -or $true) { # Always apply the fix
+    $fixResult = Fix-BoxenError
+    if (-not $fixResult) {
+        Write-Warning "Failed to fix boxen error. The server might still crash."
+    }
+}
+
+# Initialize log files
+foreach ($logFilePath in @($LogFile, $global:DMXLogFile, $global:MIDILogFile, $global:ArtNetLogFile, $global:WebServerLogFile)) {
+    if (Test-Path $logFilePath) {
+        Remove-Item $logFilePath -Force
+    }
+    # Create empty log files
+    "" | Out-File -FilePath $logFilePath -Force
+}
+
+Write-Info "Log files initialized"
+
+# Check if server port is already in use
+if (Test-PortInUse -port $ServerPort) {
+    Write-Warning "Port $ServerPort is already in use! The server might already be running."
+    $existingProcess = Get-Process -Name "node" -ErrorAction SilentlyContinue | Where-Object {
+        $_.CommandLine -match "ArtBastard_DMX"
+    }
+    
+    if ($existingProcess) {
+        Write-Info "Found existing node process (PID: $($existingProcess.Id))"
+        $shouldTerminate = Read-Host "Do you want to terminate the existing process and continue? (y/n)"
+        
+        if ($shouldTerminate -eq "y") {
+            try {
+                Stop-Process -Id $existingProcess.Id -Force
+                Write-Success "Terminated existing process"
+                # Give some time for the port to be released
+                Start-Sleep -Seconds 1
+            } catch {
+                Write-Error "Failed to terminate process: $_"
+                exit 1
+            }
+        } else {
+            Write-Info "Startup aborted by user. The existing server will continue running."
+            exit 0
+        }
+    }
+}
+
+# Build the project if not skipped - always build first before launching the UI
+if (-not $SkipBuild) {
+    Write-Info "Building server..."
+    npm run build
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Build failed with exit code $LASTEXITCODE"
+        exit 1
+    }
+    
+    Write-Success "Build completed"
+} else {
+    Write-Info "Build step skipped"
+}
+
+# Add some demo log entries for immediate display
+Add-DemoLogEntries
 
 # Run the application
 Start-Application
