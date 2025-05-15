@@ -18,14 +18,19 @@ export const SocketProvider = ({ children }) => {
             setError(null);
             // Initialize socket with error handling
             console.log('Initializing Socket.IO connection');
-            const socketInstance = io(undefined, {
+            // Use window.location to automatically connect to the correct host
+            const socketUrl = process.env.NODE_ENV === 'production'
+                ? window.location.origin
+                : 'http://localhost:3000'; // Explicitly set the backend URL in development
+            console.log(`[SocketContext] Connecting to socket at: ${socketUrl}`);
+            const socketInstance = io(socketUrl, {
                 reconnectionAttempts: 5,
                 reconnectionDelay: 1000,
                 reconnectionDelayMax: 5000,
                 timeout: 10000,
-                // Don't parse incoming data as JSON to avoid parsing errors if it's not valid
-                // Leave that to the receiver who can handle it properly
-                forceNew: true
+                forceNew: true,
+                autoConnect: true,
+                transports: ['websocket', 'polling']
             });
             socketInstance.on('connect', () => {
                 console.log('Socket.IO connected');
@@ -72,10 +77,17 @@ export const SocketProvider = ({ children }) => {
     }, []);
     // Function to manually reconnect
     const reconnect = () => {
+        console.log('[SocketContext] Manual reconnection requested');
         if (socket) {
+            console.log('[SocketContext] Disconnecting existing socket...');
             socket.disconnect();
+            socket.connect(); // Try to reconnect the existing socket first
+            console.log('[SocketContext] Socket reconnection initiated');
         }
-        initSocket();
+        else {
+            console.log('[SocketContext] No socket instance, creating new one');
+            initSocket();
+        }
     };
     return (_jsx(SocketContext.Provider, { value: { socket, connected, error, reconnect }, children: children }));
 };

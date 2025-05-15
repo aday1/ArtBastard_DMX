@@ -532,3 +532,72 @@ if ($serverReady) {
     
     exit 1
 }
+
+# Solution to Fix Missing React Module
+Write-Host "🎭 The Show Must Go On! 🎭" -ForegroundColor Cyan
+Write-Host "Setting up your ArtBastard_DMX environment..." -ForegroundColor Yellow
+
+# Navigate to the project directory
+$ProjectDir = $PSScriptRoot
+Set-Location $ProjectDir
+
+# Navigate to the React app directory
+$ReactAppDir = Join-Path $ProjectDir "react-app"
+Set-Location $ReactAppDir
+
+# Check if node_modules exists and has key packages
+$nodeModulesPath = Join-Path $ReactAppDir "node_modules"
+$reactPackagePath = Join-Path $nodeModulesPath "react"
+$needsInstall = $false
+
+if (-not (Test-Path $nodeModulesPath)) {
+    Write-Host "🚨 node_modules directory not found. Installing dependencies..." -ForegroundColor Red
+    $needsInstall = $true
+}
+elseif (-not (Test-Path $reactPackagePath)) {
+    Write-Host "🚨 React package not found in node_modules. Reinstalling dependencies..." -ForegroundColor Red
+    $needsInstall = $true
+}
+
+# Check if package.json exists
+$packageJsonPath = Join-Path $ReactAppDir "package.json"
+if (-not (Test-Path $packageJsonPath)) {
+    Write-Host "🚨 package.json not found! Please ensure you're in the correct directory." -ForegroundColor Red
+    exit 1
+}
+
+# Install dependencies if needed
+if ($needsInstall) {
+    Write-Host "📦 Installing dependencies..." -ForegroundColor Yellow
+    
+    # Clean install to avoid dependency conflicts
+    Remove-Item -Path $nodeModulesPath -Recurse -Force -ErrorAction SilentlyContinue
+    npm cache clean --force
+    
+    # Install dependencies
+    npm install
+    
+    # Verify React was installed
+    if (-not (Test-Path $reactPackagePath)) {
+        Write-Host "❌ Failed to install React! Check your package.json and try again." -ForegroundColor Red
+        exit 1
+    }
+    
+    Write-Host "✅ Dependencies successfully installed!" -ForegroundColor Green
+}
+else {
+    Write-Host "✅ Dependencies already installed." -ForegroundColor Green
+}
+
+# Check if TypeScript is installed globally, install if needed
+$typescriptInstalled = npm list -g typescript
+if ($typescriptInstalled -like "*ERR*") {
+    Write-Host "📦 Installing TypeScript globally..." -ForegroundColor Yellow
+    npm install -g typescript
+}
+
+# Start the development server
+Write-Host "🚀 Starting the development server..." -ForegroundColor Green
+npm run dev
+
+exit 0

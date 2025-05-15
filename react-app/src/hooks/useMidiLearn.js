@@ -56,7 +56,7 @@ export const useMidiLearn = () => {
             const latestMessage = midiMessages[midiMessages.length - 1];
             // Only process if we're in learning mode
             if (learnStatus === 'learning') {
-                console.log('Processing message for MIDI learn:', latestMessage);
+                console.log('[MidiLearn] Processing message for MIDI learn:', latestMessage);
                 // Handle only note on and cc messages for mapping
                 if (latestMessage._type === 'noteon' || latestMessage._type === 'cc') {
                     let mapping;
@@ -65,17 +65,21 @@ export const useMidiLearn = () => {
                             channel: latestMessage.channel,
                             note: latestMessage.note
                         };
-                        console.log('Creating note mapping:', mapping);
+                        console.log('[MidiLearn] Creating note mapping:', mapping);
                     }
                     else { // cc
                         mapping = {
                             channel: latestMessage.channel,
                             controller: latestMessage.controller
                         };
-                        console.log('Creating CC mapping:', mapping);
+                        console.log('[MidiLearn] Creating CC mapping for DMX channel', midiLearnChannel, mapping);
                     }
-                    // Add the mapping
+                    // Add the mapping - this updates the store
                     addMidiMapping(midiLearnChannel, mapping);
+                    // Force immediate update for the UI
+                    const event = new CustomEvent('midiMappingCreated', { detail: { channel: midiLearnChannel, mapping } });
+                    window.dispatchEvent(event);
+                    // Update status
                     setLearnStatus('success');
                     // Alert the MidiDmxProcessor that a new mapping has been created
                     if (typeof window !== 'undefined') {

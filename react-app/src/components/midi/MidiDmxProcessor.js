@@ -32,8 +32,7 @@ export const MidiDmxProcessor = () => {
     // Keep track of the last processed message to prevent duplicates
     const [lastProcessedMessage, setLastProcessedMessage] = useState(0);
     // Keep track of custom range mappings for each channel
-    const [channelRangeMappings, setChannelRangeMappings] = useState({});
-    // Process MIDI messages and update DMX channels
+    const [channelRangeMappings, setChannelRangeMappings] = useState({}); // Process MIDI messages and update DMX channels
     useEffect(() => {
         if (!midiMessages || midiMessages.length === 0)
             return;
@@ -42,17 +41,23 @@ export const MidiDmxProcessor = () => {
         // We use the length of the messages array as a simple ID
         if (midiMessages.length <= lastProcessedMessage)
             return;
+        console.log(`[MidiDmxProcessor] Processing new MIDI message #${midiMessages.length}:`, latestMessage);
         setLastProcessedMessage(midiMessages.length);
         // Only process CC messages for now (you can add note handling if needed)
         if (latestMessage._type === 'cc' && typeof latestMessage.value === 'number') {
             console.log('[MidiDmxProcessor] Processing CC message:', latestMessage);
             // Look for channels mapped to this controller
             let matchFound = false;
+            console.log('[MidiDmxProcessor] Current MIDI mappings:', midiMappings);
             Object.entries(midiMappings).forEach(([dmxChannelStr, mapping]) => {
                 const dmxChannel = parseInt(dmxChannelStr, 10);
+                console.log(`[MidiDmxProcessor] Checking DMX Channel ${dmxChannel} mapping:`, mapping);
+                console.log(`[MidiDmxProcessor] Comparing with message: channel=${latestMessage.channel}, controller=${latestMessage.controller}`);
+                // Compare the mapping with the incoming message
                 if (mapping &&
                     mapping.channel === latestMessage.channel &&
                     mapping.controller === latestMessage.controller) {
+                    console.log(`[MidiDmxProcessor] ✓ Found match for DMX Channel ${dmxChannel}!`);
                     matchFound = true;
                     // Get any custom range mapping for this channel
                     const rangeMapping = channelRangeMappings[dmxChannel] || {};
