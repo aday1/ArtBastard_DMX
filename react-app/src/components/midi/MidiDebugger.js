@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useStore } from '../../store';
 import { sendTestNoteOnMessage, sendTestCCMessage, testMidiLearnWorkflow } from '../../hooks/useMidiTestUtils';
 import styles from './MidiLearnButton.module.scss';

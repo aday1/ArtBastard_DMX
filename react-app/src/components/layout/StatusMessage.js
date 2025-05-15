@@ -1,5 +1,5 @@
 import { jsx as _jsx } from "react/jsx-runtime";
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../../store';
 import styles from './StatusMessage.module.scss';
 export const StatusMessage = ({ message, type }) => {

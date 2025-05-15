@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { NetworkStatus } from './NetworkStatus';
 import { DmxChannelStats } from '../dmx/DmxChannelStats';

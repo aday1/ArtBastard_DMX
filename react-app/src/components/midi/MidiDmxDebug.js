@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 /**
  * A debug component to help diagnose MIDI to DMX communication issues

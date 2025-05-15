@@ -1,5 +1,5 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { useVisualizationData } from '../../hooks/useVisualizationData';
 import styles from './DigitalIlluminationAtelier.module.scss';

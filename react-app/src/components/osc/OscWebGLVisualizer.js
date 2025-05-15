@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import React, { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import styles from './OscWebGLVisualizer.module.scss';
 // Vertex shader for particles

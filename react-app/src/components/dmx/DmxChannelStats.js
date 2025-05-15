@@ -1,5 +1,4 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import React from 'react';
 import { useMemo } from 'react';
 import { useStore } from '../../store';
 import styles from './DmxChannelStats.module.scss';

@@ -1,5 +1,5 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import { useTheme } from '../../context/ThemeContext';
 import { OscWebGLVisualizer } from './OscWebGLVisualizer';

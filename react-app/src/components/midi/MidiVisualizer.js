@@ -1,5 +1,5 @@
 import { jsxs as _jsxs, jsx as _jsx } from "react/jsx-runtime";
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSocket } from '../../context/SocketContext';
 import { useStore } from '../../store';
 import styles from './MidiVisualizer.module.scss';

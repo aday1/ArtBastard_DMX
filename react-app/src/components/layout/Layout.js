@@ -1,5 +1,4 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import React from 'react';
 import { useStore } from '../../store';
 import { useTheme } from '../../context/ThemeContext';
 import { StatusBar } from './StatusBar';
