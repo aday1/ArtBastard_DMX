@@ -2,6 +2,22 @@
 
 Welcome, maestro! This guide will get your ArtBastard DMX512FTW system up and running with theatrical flair!
 
+## Optional: Clean Up Before You Start (For Debugging)
+
+If you're helping to debug or want a completely fresh start, it's a good idea to run the cleanup script first. This will remove old builds, logs, and `node_modules` directories.
+
+*   **Windows (PowerShell):**
+    Open PowerShell, navigate to the project root (`ArtBastard_DMX`), and run:
+    ```powershell
+    .\CLEANUP.ps1
+    ```
+*   **Linux/macOS (Bash):**
+    Open your terminal, navigate to the project root (`ArtBastard_DMX`), and run:
+    ```bash
+    bash ./CLEANUP.sh
+    ```
+**Important:** After running the cleanup script, you will need to reinstall dependencies as shown in the Quickstart or Manual Start sections.
+
 ## Automated Quickstart Scripts
 
 For a dazzlingly simple setup, we've prepared automated scripts:
@@ -42,4 +58,4 @@ npm run dev
 *   Frontend on port 3001.
 
 ### 4. View:
-[http://localhost:3001](http://localhost:3001) (It could be something else tho.... )
+[http://localhost:3001](http://localhost:3001) (It could be something else tho, check the console log output or something.... )
