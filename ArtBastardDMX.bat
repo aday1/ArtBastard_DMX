@@ -1,3 +1,0 @@
-@echo off
-echo Starting ArtBastard DMX Launcher...
-start "" "%~dp0launcher-dist\ArtBastard DMX Launcher.exe"
