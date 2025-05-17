@@ -27,6 +27,11 @@ export const pingArtNetDevice = index.pingArtNetDevice;
 export const clearMidiMappings = index.clearMidiMappings;
 export const updateArtNetConfig = index.updateArtNetConfig;
 
+// Added re-exports for DMX manipulation
+export const getDmxChannels = index.getDmxChannels;
+export const setAllDmxChannels = index.setAllDmxChannels;
+export const setDmxChannelsFromArray = index.setDmxChannelsFromArray;
+
 // Direct implementation of startLaserTime to avoid circular references
 export function startLaserTime(io: Server): void {
   log('Starting laser time sequence from core module', 'SYSTEM');

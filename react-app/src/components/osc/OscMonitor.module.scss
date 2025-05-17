@@ -1,0 +1,45 @@
+\
+.oscMonitor {
+  border: 1px solid #444;
+  padding: 10px;
+  margin-bottom: 15px;
+  background-color: #2a2a2a;
+  border-radius: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+
+  h3 {
+    margin-top: 0;
+    color: #00bcd4; // Cyan
+  }
+
+  .messageContainer {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+  }
+
+  .messageItem {
+    padding: 4px 0;
+    border-bottom: 1px dotted #333;
+    display: flex;
+    gap: 10px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .timestamp {
+    color: #888;
+    min-width: 70px;
+  }
+
+  .address {
+    color: #a6e22e; // Green
+    font-weight: bold;
+  }
+
+  .args {
+    color: #e6db74; // Yellow
+  }
+}

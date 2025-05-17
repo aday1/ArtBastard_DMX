@@ -102,9 +102,81 @@
 
       &::after {
         transform: scaleX(1);
+        background: #4ecdc4; // Ensure active also has the underline
       }
     }
   }
+
+  // Styles for the Blackout Button
+  .blackoutButton {
+    background-color: var(--color-error-bg, #5d0000); // Dark red for default
+    color: var(--color-error-text, #ff8a80); // Light red text
+    border: 1px solid var(--color-error-border, #ff5252);
+
+    &:hover {
+      background-color: var(--color-error-hover-bg, #7e0000);
+      border-color: var(--color-error-hover-border, #ff1744);
+    }
+
+    &.activeBlackout {
+      background-color: var(--color-error-active-bg, #ff1744); // Brighter red when active
+      color: var(--color-error-active-text, #ffffff);
+      border-color: var(--color-error-active-border, #c5001a);
+      font-weight: bold;
+
+      i {
+        color: var(--color-error-active-text, #ffffff);
+      }
+    }
+
+    &.learning {
+      // Style for when MIDI learn is active for this button
+      box-shadow: 0 0 8px 2px var(--color-accent, #00bcd4); // Example: cyan glow
+      animation: pulseAnimation 1.5s infinite;
+    }
+  }
+
+  // Styles for the Full On Button
+  .fullOnButton {
+    background-color: var(--color-success-bg, #004d40); // Dark green for default
+    color: var(--color-success-text, #69f0ae); // Light green text
+    border: 1px solid var(--color-success-border, #00e676);
+
+    &:hover {
+      background-color: var(--color-success-hover-bg, #00695c);
+      border-color: var(--color-success-hover-border, #00c853);
+    }
+
+    &.activeFullOn {
+      background-color: var(--color-success-active-bg, #00c853); // Brighter green when active
+      color: var(--color-success-active-text, #ffffff);
+      border-color: var(--color-success-active-border, #00a152);
+      font-weight: bold;
+
+      i {
+        color: var(--color-success-active-text, #ffffff);
+      }
+    }
+
+    &.learning {
+      // Style for when MIDI learn is active for this button
+      box-shadow: 0 0 8px 2px var(--color-accent, #00bcd4); // Example: cyan glow
+      animation: pulseAnimation 1.5s infinite;
+    }
+  }
+
+  .midiLearnButton {
+    padding: 0.5rem 0.8rem; // Smaller padding
+    min-width: auto; // Allow it to be smaller
+    background-color: var(--bg-tertiary, #3a3a3a);
+    i {
+      margin-right: 0; // No text, so no need for margin
+    }
+    &:hover {
+      background-color: var(--color-accent-hover, #0097a7);
+    }
+  }
+
   @media (max-width: 768px) {
     padding: 0.5rem;
     gap: 0.5rem;
@@ -141,5 +213,17 @@
         font-size: 1.2em;
       }
     }
+  }
+}
+
+@keyframes pulseAnimation {
+  0% {
+    box-shadow: 0 0 5px 0px var(--color-accent, #00bcd4);
+  }
+  50% {
+    box-shadow: 0 0 10px 3px var(--color-accent, #00bcd4);
+  }
+  100% {
+    box-shadow: 0 0 5px 0px var(--color-accent, #00bcd4);
   }
 }

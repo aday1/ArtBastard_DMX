@@ -6,13 +6,21 @@ import fs from 'fs';
 import cors from 'cors';
 import { json } from 'body-parser';
 import { log } from './logger'; // Import from logger instead of index
-import { startLaserTime, listMidiInterfaces, connectMidiInput, disconnectMidiInput, updateArtNetConfig, pingArtNetDevice } from './core';
+import { startLaserTime, listMidiInterfaces, connectMidiInput, disconnectMidiInput, updateArtNetConfig, pingArtNetDevice, getDmxChannels, setAllDmxChannels, setDmxChannelsFromArray } from './core';
 import { apiRouter, setupSocketHandlers } from './api';
 
 // Declare global io instance for use in API routes
 declare global {
   var io: Server;
 }
+
+// Store the DMX state before blackout
+let dmxChannelsBeforeBlackout: number[] | null = null;
+let isBlackoutActiveServer = false;
+
+// Store the DMX state before full on
+let dmxChannelsBeforeFullOn: number[] | null = null;
+let isFullOnActiveServer = false;
 
 // Ensure required directories exist
 function ensureDirectoriesExist() {
@@ -170,6 +178,72 @@ try {
           message: `Connection test failed: ${error instanceof Error ? error.message : String(error)}`
         });
       }
+    });
+
+    // Add this handler for the blackout button
+    socket.on('set_blackout', (isActive: boolean) => {
+      log(`Socket event 'set_blackout' received: ${isActive}`, 'SERVER', { socketId: socket.id });
+      if (isActive) {
+        if (!isBlackoutActiveServer) {
+          const currentDmxState = getDmxChannels();
+          dmxChannelsBeforeBlackout = [...currentDmxState]; // Store a copy
+          setAllDmxChannels(0, io); // Pass io for broadcasting
+          isBlackoutActiveServer = true;
+          log('Blackout activated. Stored previous DMX state.', 'SERVER');
+        } else {
+          log('Blackout already active, no change.', 'SERVER');
+        }
+      } else {
+        if (isBlackoutActiveServer) {
+          if (dmxChannelsBeforeBlackout) {
+            setDmxChannelsFromArray(dmxChannelsBeforeBlackout, io); // Pass io
+            dmxChannelsBeforeBlackout = null; // Clear stored state
+            log('Blackout deactivated. Restored DMX state.', 'SERVER');
+          } else {
+            log('Blackout deactivation requested; server thought it was active, but no prior DMX state was stored. Setting all channels to 0 as a fallback.', 'WARN');
+            setAllDmxChannels(0, io); // Fallback to ensure it's "off" (all zero), pass io
+          }
+          isBlackoutActiveServer = false; // Mark as inactive
+        } else {
+          log('Blackout already inactive, no change.', 'SERVER');
+        }
+      }
+      // Notify all clients of the (potentially) changed blackout state
+      io.emit('blackoutStateChanged', isBlackoutActiveServer);
+      log(`Broadcast blackoutStateChanged: ${isBlackoutActiveServer}`, 'SERVER');
+    });
+
+    // Add this handler for the full on button
+    socket.on('set_full_on', (isActive: boolean) => {
+      log(`Socket event 'set_full_on' received: ${isActive}`, 'SERVER', { socketId: socket.id });
+      if (isActive) {
+        if (!isFullOnActiveServer) {
+          const currentDmxState = getDmxChannels();
+          dmxChannelsBeforeFullOn = [...currentDmxState]; // Store a copy
+          setAllDmxChannels(255, io); // Set all channels to 255
+          isFullOnActiveServer = true;
+          log('Full On activated. Stored previous DMX state.', 'SERVER');
+        } else {
+          log('Full On already active, no change.', 'SERVER');
+        }
+      } else {
+        if (isFullOnActiveServer) {
+          if (dmxChannelsBeforeFullOn) {
+            setDmxChannelsFromArray(dmxChannelsBeforeFullOn, io);
+            dmxChannelsBeforeFullOn = null; // Clear stored state
+            log('Full On deactivated. Restored DMX state.', 'SERVER');
+          } else {
+            log('Full On deactivation requested; server thought it was active, but no prior DMX state was stored. Setting all channels to 255 as a fallback.', 'WARN');
+            setAllDmxChannels(255, io); // Fallback to ensure it's "on" (all 255)
+          }
+          isFullOnActiveServer = false; // Mark as inactive
+        } else {
+          log('Full On already inactive, no change.', 'SERVER');
+        }
+      }
+      // Notify all clients of the (potentially) changed full on state
+      io.emit('fullOnStateChanged', isFullOnActiveServer);
+      log(`Broadcast fullOnStateChanged: ${isFullOnActiveServer}`, 'SERVER');
     });
 
     socket.on('disconnect', (reason) => {

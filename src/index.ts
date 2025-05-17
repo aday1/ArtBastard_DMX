@@ -145,11 +145,52 @@ function saveConfig() {
 }
 
 export function getDmxChannels(): number[] {
-  return dmxChannels;
+    return [...dmxChannels]; // Return a copy to prevent direct modification
+}
+
+export function setAllDmxChannels(value: number, io: Server) {
+    log(`Setting all DMX channels to ${value}`, 'DMX');
+    const allChannelsUpdate: Record<number, number> = {};
+    for (let i = 0; i < dmxChannels.length; i++) {
+        dmxChannels[i] = value;
+        if (artnetSender) {
+            artnetSender.setChannel(i, value);
+        }
+        allChannelsUpdate[i] = value;
+    }
+    if (artnetSender) {
+        artnetSender.transmit();
+        log('ArtNet transmission sent after setting all channels.', 'DMX');
+    }
+    io.emit('dmxBatchUpdate', allChannelsUpdate);
+    log('Emitted dmxBatchUpdate after setting all channels.', 'SERVER');
+}
+
+export function setDmxChannelsFromArray(values: number[], io: Server) {
+    if (values.length !== dmxChannels.length) {
+        log(`Error: setDmxChannelsFromArray received array of incorrect length. Expected ${dmxChannels.length}, got ${values.length}`, 'ERROR');
+        return;
+    }
+    log(`Restoring DMX channels from array (length: ${values.length})`, 'DMX');
+    const restoredChannelsUpdate: Record<number, number> = {};
+    for (let i = 0; i < dmxChannels.length; i++) {
+        const valueToSet = values[i];
+        dmxChannels[i] = valueToSet;
+        if (artnetSender) {
+            artnetSender.setChannel(i, valueToSet);
+        }
+        restoredChannelsUpdate[i] = valueToSet;
+    }
+    if (artnetSender) {
+        artnetSender.transmit();
+        log('ArtNet transmission sent after restoring channels from array.', 'DMX');
+    }
+    io.emit('dmxBatchUpdate', restoredChannelsUpdate);
+    log('Emitted dmxBatchUpdate after restoring channels from array.', 'SERVER');
 }
 
 export function getChannelNames(): string[] {
-  return channelNames;
+    return channelNames;
 }
 
 // Store active MIDI inputs

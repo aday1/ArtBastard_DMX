@@ -41,6 +41,13 @@ export interface OscActivity {
   timestamp: number // Timestamp of the last message
 }
 
+// Add this interface for global MIDI assignable controls
+export interface GlobalControlMidiMapping {
+  id: string; // e.g., 'BLACKOUT'
+  mapping: MidiMapping;
+  type: 'toggle' | 'noteOnOff'; // How the MIDI message should control it
+}
+
 interface State {
   // DMX State
   dmxChannels: number[]
@@ -73,6 +80,16 @@ interface State {
   statusMessage: { text: string; type: 'success' | 'error' | 'info' } | null
   oscActivity: Record<number, OscActivity> // Added: channelIndex -> activity
   exampleSliderValue: number
+
+  // Blackout State
+  blackoutActive: boolean;
+  blackoutMidiMapping: MidiMapping | null;
+  isLearningBlackout: boolean;
+
+  // Full On State
+  fullOnActive: boolean;
+  fullOnMidiMapping: MidiMapping | null;
+  isLearningFullOn: boolean;
   
   // Socket state
   socket: Socket | null
@@ -113,6 +130,18 @@ interface State {
   showStatusMessage: (text: string, type: 'success' | 'error' | 'info') => void
   clearStatusMessage: () => void
   setExampleSliderValue: (value: number) => void
+
+  // Blackout Actions
+  toggleBlackout: () => void;
+  setBlackoutMidiMapping: (mapping: MidiMapping | null) => void;
+  startLearnBlackout: () => void;
+  cancelLearnBlackout: () => void;
+
+  // Full On Actions
+  toggleFullOn: () => void;
+  setFullOnMidiMapping: (mapping: MidiMapping | null) => void;
+  startLearnFullOn: () => void;
+  cancelLearnFullOn: () => void;
 }
 
 export const useStore = create<State>()(
@@ -151,9 +180,35 @@ export const useStore = create<State>()(
       statusMessage: null,
       oscActivity: {}, // Initialize oscActivity
       exampleSliderValue: 0,
+
+      // Blackout initial state
+      blackoutActive: false,
+      blackoutMidiMapping: null,
+      isLearningBlackout: false,
+
+      // Full On initial state
+      fullOnActive: false,
+      fullOnMidiMapping: null,
+      isLearningFullOn: false,
       
       socket: null,
-      setSocket: (socket) => set({ socket }),
+      setSocket: (socket) => {
+        set({ socket });
+        if (socket) {
+          // Listen for DMX batch updates
+          socket.on('dmxBatchUpdate', (dmxChannels: number[]) => {
+            set({ dmxChannels });
+          });
+          // Listen for blackout state changes from the server
+          socket.on('blackoutStateChanged', (isActive: boolean) => {
+            set({ blackoutActive: isActive });
+          });
+          // Listen for full on state changes from the server
+          socket.on('fullOnStateChanged', (isActive: boolean) => {
+            set({ fullOnActive: isActive });
+          });
+        }
+      },
       
       // Actions
       fetchInitialState: async () => {
@@ -477,7 +532,40 @@ export const useStore = create<State>()(
 
       setExampleSliderValue: (value) => {
         set({ exampleSliderValue: value });
-      }
+      },
+
+      // Blackout Actions
+      toggleBlackout: () => {
+        const { socket, blackoutActive } = get();
+        if (socket) {
+          socket.emit('set_blackout', !blackoutActive);
+          // The server will now be responsible for updating blackoutActive via 'blackoutStateChanged'
+        }
+      },
+      setBlackoutMidiMapping: (mapping) => set({ blackoutMidiMapping: mapping }),
+      startLearnBlackout: () => set({ isLearningBlackout: true, isLearningFullOn: false, midiLearnChannel: null, midiLearnScene: null }),
+      cancelLearnBlackout: () => set({ isLearningBlackout: false }),
+
+      // Full On Actions
+      toggleFullOn: () => {
+        const { socket, fullOnActive } = get();
+        if (socket) {
+          socket.emit('set_full_on', !fullOnActive);
+          // The server will now be responsible for updating fullOnActive via 'fullOnStateChanged'
+        }
+      },
+      setFullOnMidiMapping: (mapping) => set({ fullOnMidiMapping: mapping }),
+      startLearnFullOn: () => {
+        // Cancel other learns if any
+        if (get().midiLearnChannel !== null) get().cancelMidiLearn();
+        if (get().isLearningBlackout) get().cancelLearnBlackout(); // Cancel blackout learn
+        set({ isLearningFullOn: true, midiLearnChannel: null });
+        get().showStatusMessage('Learning MIDI for FULL ON. Send a MIDI Note On/Off or CC.', 'info');
+      },
+      cancelLearnFullOn: () => {
+        set({ isLearningFullOn: false });
+        get().showStatusMessage('Full On MIDI learn cancelled.', 'info');
+      },
     }),
     { name: 'ArtBastard-DMX-Store' }
   )
