@@ -17,7 +17,7 @@ interface HealthStatus {
     heapTotal: number
   }
   midiDevicesConnected: number
-  artnetStatus: string
+  artnetStatus: string // This will now receive more detailed statuses
 }
 
 interface Props {
@@ -91,6 +91,46 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
     onClose?.()
   }
 
+  // Helper function to determine ArtNet display text and style
+  const getArtNetDisplayDetails = (status: string | undefined) => {
+    let fullText = status || 'Unknown';
+    let shortText = status || 'Unknown';
+    let styleKey: 'statusOk' | 'statusDegraded' | 'statusUnknown' = 'statusUnknown';
+
+    switch (status) {
+      case 'alive':
+        fullText = 'ICMP Reply to Artnet'; // User's requested text
+        shortText = 'ArtNet OK';
+        styleKey = 'statusOk';
+        break;
+      case 'initialized_pending_ping':
+        fullText = 'ArtNet Initialized, Pinging...';
+        shortText = 'Pinging...';
+        styleKey = 'statusUnknown'; // Or 'statusPending' if you add specific styles
+        break;
+      case 'init_failed':
+        fullText = 'ArtNet Initialization Failed';
+        shortText = 'Init Fail';
+        styleKey = 'statusDegraded';
+        break;
+      case 'tcp_timeout':
+        fullText = 'ArtNet TCP Port Timeout';
+        shortText = 'Timeout';
+        styleKey = 'statusDegraded';
+        break;
+      case 'unreachable':
+        fullText = 'ArtNet Device Unreachable';
+        shortText = 'Unreachable';
+        styleKey = 'statusDegraded';
+        break;
+      default:
+        fullText = status ? `ArtNet: ${status}` : 'ArtNet: Unknown';
+        shortText = status || 'Unknown';
+        styleKey = 'statusUnknown';
+    }
+    return { fullText, shortText, styleKey };
+  }
+
   const content = (
     <div className={styles.networkStatus}>
       <div className={styles.header}>
@@ -140,11 +180,11 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
           </div>
         </div>
 
-        <div className={`${styles.statusItem} ${styles[health?.artnetStatus === 'initialized' ? 'ok' : 'degraded']}`}>
+        <div className={`${styles.statusItem} ${styles[getArtNetDisplayDetails(health?.artnetStatus).styleKey]}`}>
           <i className="fas fa-network-wired"></i>
           <div className={styles.statusInfo}>
             <span className={styles.label}>ArtNet</span>
-            <span className={styles.value}>{health?.artnetStatus || 'Unknown'}</span>
+            <span className={styles.value}>{getArtNetDisplayDetails(health?.artnetStatus).fullText}</span>
           </div>
         </div>
 
@@ -181,6 +221,7 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
     
     // Calculate total MIDI devices (server + browser)
     const totalMidiDevices = (health?.midiDevicesConnected || 0) + (activeBrowserInputs?.size || 0);
+    const artNetDetails = getArtNetDisplayDetails(health?.artnetStatus);
     
     return (
       <div className={styles.compactView}>
@@ -206,9 +247,9 @@ export const NetworkStatus: React.FC<Props> = ({ isModal = false, onClose, compa
         </span>
         <span 
           className={`${styles.compactItem} ${styles.artnetIndicator}`}
-          title={`ArtNet Status: ${health?.artnetStatus || 'Unknown'}`}
+          title={`ArtNet Status: ${artNetDetails.fullText}`}
         >
-          <i className="fas fa-network-wired"></i> {health?.artnetStatus || 'Unknown'}
+          <i className={`fas fa-network-wired ${styles[artNetDetails.styleKey]}`}></i> {artNetDetails.shortText}
         </span>
       </div>
     )

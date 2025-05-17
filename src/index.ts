@@ -100,6 +100,14 @@ let artNetConfig: ArtNetConfig = {
 // ArtNet sender
 let artnetSender: any;
 
+// Keep track of ArtNet ping status to reduce log noise
+let lastArtNetStatus = 'unknown';
+let artNetFailureCount = 0;
+const MAX_CONSECUTIVE_FAILURES = 3; // Only log every 3rd failure
+
+// Initialize global ArtNet ping status
+(global as any).artNetPingStatus = 'unknown';
+
 function loadConfig() {
     if (fs.existsSync(CONFIG_FILE)) {
         const data = fs.readFileSync(CONFIG_FILE, 'utf-8');
@@ -406,6 +414,7 @@ function initializeArtNet() {
         }
 
         log('ArtNet sender initialized', 'ARTNET', { config: artNetConfig });
+        (global as any).artNetPingStatus = 'initialized_pending_ping'; // Set status before first ping
         
         // Initial ping to check connectivity
         if (global.io) {
@@ -415,6 +424,7 @@ function initializeArtNet() {
         return true;
     } catch (error) {
         log('Error initializing ArtNet', 'ERROR', { error });
+        (global as any).artNetPingStatus = 'init_failed'; // Set status on initialization failure
         global.io?.emit('artnetStatus', { 
             status: 'error',
             message: `Failed to initialize: ${error}` 
@@ -702,11 +712,6 @@ function loadScenes() {
     }
 }
 
-// Keep track of ArtNet ping status to reduce log noise
-let lastArtNetStatus = 'unknown';
-let artNetFailureCount = 0;
-const MAX_CONSECUTIVE_FAILURES = 3; // Only log every 3rd failure
-
 function pingArtNetDevice(io: Server, ip?: string) {
     // If ip is provided, use it instead of the config IP
     const targetIp = ip || artNetConfig.ip;
@@ -744,6 +749,7 @@ function pingArtNetDevice(io: Server, ip?: string) {
                 lastArtNetStatus = 'alive';
                 artNetFailureCount = 0;
             }
+            (global as any).artNetPingStatus = 'alive'; // Update global status
             io.emit('artnetStatus', { ip: targetIp, status: 'alive' });
         })
         .catch((error: Error) => {
@@ -762,6 +768,8 @@ function pingArtNetDevice(io: Server, ip?: string) {
                 logMessage = `ArtNet device at ${targetIp} is unreachable: ${error.message}`;
                 clientMessage = `ArtNet device at ${targetIp} is not responding: ${error.message}`;
             }
+
+            (global as any).artNetPingStatus = newStatus; // Update global status
 
             if (lastArtNetStatus !== newStatus) {
                 log(logMessage, logLevel, { errorDetail: error.message, previousStatus: lastArtNetStatus });

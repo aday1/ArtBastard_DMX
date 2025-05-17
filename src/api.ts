@@ -30,6 +30,7 @@ declare global {
       io: Server
       activeMidiInputs: { [key: string]: any }
       artnetSender: any
+      artNetPingStatus: string // Added global variable
     }
   }
 }
@@ -82,13 +83,13 @@ apiRouter.get('/health', (req, res) => {
   // Get socket connection stats
   const stats = {
     serverStatus: 'healthy',
-    socketConnections: io.engine.clientsCount || 0,
-    socketStatus: io.sockets.sockets.size > 0 ? 'listening' : 'not listening',
+    socketConnections: io?.engine?.clientsCount || 0,
+    socketStatus: io?.sockets?.sockets?.size > 0 ? 'listening' : 'not listening',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     memoryUsage: process.memoryUsage(),
     midiDevicesConnected: Object.keys(global.activeMidiInputs || {}).length,
-    artnetStatus: global.artnetSender ? 'initialized' : 'not initialized'
+    artnetStatus: (global as any).artNetPingStatus || 'unknown' // Use the detailed ping status
   };
   
   // Determine overall health
