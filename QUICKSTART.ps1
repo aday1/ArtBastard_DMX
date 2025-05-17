@@ -12,7 +12,7 @@ if (-not $ProjectRootPath) {
 Set-Location $ProjectRootPath
 Write-Host "📍 Our stage is set at: $($ProjectRootPath)" -ForegroundColor Yellow
 
-if (-not (Test-Path -Path ".\package.json" -PathType Leaf) -or -not (Test-Path -Path ".\react-app" -PathType Container)) {
+if (-not (Test-Path -Path (Join-Path $ProjectRootPath "package.json") -PathType Leaf) -or -not (Test-Path -Path (Join-Path $ProjectRootPath "react-app") -PathType Container)) {
     Write-Error "🛑 STOP THE PRESSES! This script must be conducted from the ArtBastard_DMX project's main stage!"
     Write-Error "Ensure 'package.json' and the 'react-app' directory are in place: $ProjectRootPath"
     Exit 1
@@ -38,11 +38,11 @@ if (Test-Path $FrontendDistDir) {
 }
 # Optional: For a truly clean slate, uncomment to remove node_modules
 # if (Test-Path $NodeModulesDir) {
-#     Write-Host "Removing backend node_modules: $NodeModulesDir (This might take a moment!) 🌪️" -ForegroundColor DarkYellow
+#     Write-Host "Removing backend node_modules: $NodeModulesDir (This might take a moment!)" -ForegroundColor DarkYellow
 #     Remove-Item -Recurse -Force $NodeModulesDir
 # }
 # if (Test-Path $FrontendNodeModulesDir) {
-#     Write-Host "Removing frontend node_modules: $FrontendNodeModulesDir (Patience, darling!) 🌪️" -ForegroundColor DarkYellow
+#     Write-Host "Removing frontend node_modules: $FrontendNodeModulesDir (Patience, darling!)" -ForegroundColor DarkYellow
 #     Remove-Item -Recurse -Force $FrontendNodeModulesDir
 # }
 
@@ -58,11 +58,11 @@ if ($LASTEXITCODE -ne 0) { Write-Error "💔 Oh dear, the backend orchestra is o
 Write-Host "✅ Backend orchestra assembled!" -ForegroundColor Green
 
 Write-Host "Installing frontend divas..." -ForegroundColor DarkCyan
-if (-not (Test-Path -Path ".\react-app" -PathType Container)) {
-    Write-Error "🛑 Missing the frontend stage! 'react-app' directory not found at '$ProjectRootPath\react-app'."
+if (-not (Test-Path -Path (Join-Path $ProjectRootPath "react-app") -PathType Container)) {
+    Write-Error "🛑 Missing the frontend stage! 'react-app' directory not found at '$ProjectRootPath\\react-app'."
     Exit 1
 }
-Push-Location -Path ".\react-app"
+Push-Location -Path (Join-Path $ProjectRootPath "react-app")
 npm install
 if ($LASTEXITCODE -ne 0) { Write-Error "💔 Heavens, the frontend divas are having a tantrum! (npm install failed)"; Pop-Location; Exit 1 }
 Pop-Location
@@ -88,13 +88,11 @@ Write-Host "‼️ ATTENTION, STAGE MANAGER (That's You!) ‼️" -ForegroundCol
 Write-Host "The spotlight now turns to you for the frontend!" -ForegroundColor Yellow
 Write-Host "Please, with dramatic flair, open a NEW PowerShell terminal/tab, and command:" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  Set-Location '$ProjectRootPath\react-app'" -ForegroundColor White
+Write-Host "  Set-Location '$($ProjectRootPath)\\react-app'" -ForegroundColor White
 Write-Host "  npm run dev" -ForegroundColor White
 Write-Host ""
-Write-Host "And behold! The frontend UI shall illuminate your screen, typically at http://localhost:3030 (maybe) (dev server) but if it's not, then it's likely the port shown in the console after running the command." -ForegroundColor Yellow
+Write-Host "And behold! The frontend UI shall illuminate your screen, typically at http://localhost:3001 (dev server) but if it's not, then it's likely the port shown in the console after running the command." -ForegroundColor Yellow
 Write-Host "--------------------------------------------------------------------" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "🎉 Bravo! The ArtBastard DMX Quickstart is in motion! 🎉" -ForegroundColor Magenta
-Write-Host "The backend is weaving its magic in another realm (window)."
 Write-Host "Follow your cue in Act IV to bring the frontend to life!"
-Write-Host "May your lights be bright and your cues be perfect! 🌟" -ForegroundColor Cyan
+Write-Host "May your lights be bright and your cues be perfect!" -ForegroundColor Cyan
