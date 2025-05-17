@@ -1,4 +1,4 @@
-Write-Host "🎭✨ Grand ArtBastard DMX512FTW Orchestrator Activated! ✨🎭" -ForegroundColor Magenta
+Write-Host "🎭✨ RC Grand ArtBastard DMX512FTW Orchestrator Activated! ✨🎭" -ForegroundColor Magenta
 Write-Host "----------------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host "Get ready for a *spectacular* setup, darling!" -ForegroundColor Cyan
 Write-Host ""
