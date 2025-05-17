@@ -6,9 +6,9 @@ import { useMidiScaling, ScalingOptions } from '../../hooks/useMidiScaling';
 interface MidiRangeMapping {
   inputMin?: number;
   inputMax?: number;
-  outputMin?: number; 
+  outputMin?: number;
   outputMax?: number;
-  curve?: number;  // 1 = linear, >1 = exponential, <1 = logarithmic
+  curve?: number; // Changed from string literal to number to match useMidiScaling
 }
 
 /**
@@ -22,11 +22,11 @@ export const MidiDmxProcessor: React.FC = () => {
   const { scaleValue } = useMidiScaling();
   
   // Keep track of the last processed message to prevent duplicates
-  const [lastProcessedMessage, setLastProcessedMessage] = useState<number>(0);
+  const [lastProcessedMessageSignature, setLastProcessedMessageSignature] = useState<string | null>(null);
   
   // Keep track of custom range mappings for each channel
   const [channelRangeMappings, setChannelRangeMappings] = useState<Record<number, MidiRangeMapping>>({});
-  
+
   // Log when MIDI mappings change, helpful for debugging
   useEffect(() => {
     console.log('[MidiDmxProcessor] MIDI mappings updated in store:', midiMappings);
@@ -39,24 +39,23 @@ export const MidiDmxProcessor: React.FC = () => {
     }
 
     const latestMessage = midiMessages[midiMessages.length - 1];
+    const currentMessageSignature = JSON.stringify(latestMessage);
 
-    if (midiMessages.length <= lastProcessedMessage) {
+    if (currentMessageSignature === lastProcessedMessageSignature) {
       return;
     }
 
-    console.log(`[MidiDmxProcessor] Attempting to process MIDI message #${midiMessages.length}:`, latestMessage);
+    console.log(`[MidiDmxProcessor] Attempting to process MIDI message:`, latestMessage);
 
     if (latestMessage._type === 'cc' && typeof latestMessage.value === 'number') {
       console.log('[MidiDmxProcessor] Processing CC message:', latestMessage, 'Current Mappings:', midiMappings);
-      setLastProcessedMessage(midiMessages.length); // Mark this message length as processed
-
+      
       let matchFoundThisRun = false;
       Object.entries(midiMappings).forEach(([dmxChannelStr, mapping]) => {
         if (!mapping) return;
 
         const dmxChannel = parseInt(dmxChannelStr, 10);
         
-        // Ensure mapping.controller is defined, as mapping could be for a note
         if (mapping.controller !== undefined &&
             mapping.channel === latestMessage.channel &&
             mapping.controller === latestMessage.controller) {
@@ -98,11 +97,13 @@ export const MidiDmxProcessor: React.FC = () => {
       if (!matchFoundThisRun) {
         console.log('[MidiDmxProcessor] No DMX channel mapped to received CC message:', latestMessage, 'Current Mappings:', midiMappings);
       }
+      setLastProcessedMessageSignature(currentMessageSignature);
+
     } else if (latestMessage._type !== 'noteon' && latestMessage._type !== 'noteoff') {
-      setLastProcessedMessage(midiMessages.length);
       console.log(`[MidiDmxProcessor] Ignored/marked as processed non-CC message type: ${latestMessage._type}`);
+      setLastProcessedMessageSignature(currentMessageSignature);
     }
-  }, [midiMessages, midiMappings, setDmxChannel, scaleValue, channelRangeMappings, lastProcessedMessage]);
+  }, [midiMessages, midiMappings, setDmxChannel, scaleValue, channelRangeMappings]);
 
   /**
    * Set a custom range mapping for a specific DMX channel
@@ -116,26 +117,29 @@ export const MidiDmxProcessor: React.FC = () => {
       }
     }));
   };
-  
-  // Expose methods to parent components via window for testing
+
+  /**
+   * Get all custom range mappings
+   */
+  const getChannelRangeMappings = () => {
+    return channelRangeMappings;
+  };
+
+  // Expose setChannelRangeMapping and getChannelRangeMappings to window for testing/external use
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // @ts-ignore
-      window.midiDmxProcessor = {
+      (window as any).midiDmxProcessor = {
         setChannelRangeMapping,
-        getChannelRangeMappings: () => channelRangeMappings
+        getChannelRangeMappings,
       };
     }
-    
     return () => {
       if (typeof window !== 'undefined') {
-        // @ts-ignore
-        delete window.midiDmxProcessor;
+        delete (window as any).midiDmxProcessor;
       }
     };
-  }, [channelRangeMappings]);
-  
-  // This component doesn't render anything
+  }, [setChannelRangeMapping, getChannelRangeMappings]);
+
   return null;
 };
 
