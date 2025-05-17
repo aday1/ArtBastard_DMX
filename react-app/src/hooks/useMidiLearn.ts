@@ -1,22 +1,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useStore } from '../store'
-import { useSocket } from '../context/SocketContext'
 import { MidiMapping } from '../store'
 
 export const useMidiLearn = () => {
-  const { socket } = useSocket()
   const {
     midiLearnChannel,
     midiMessages,
-    startMidiLearn,
-    cancelMidiLearn,
+    startMidiLearn: startMidiLearnAction,
+    cancelMidiLearn: cancelMidiLearnAction,
     addMidiMapping,
+    showStatusMessage,
   } = useStore((state) => ({
     midiLearnChannel: state.midiLearnChannel,
     midiMessages: state.midiMessages,
     startMidiLearn: state.startMidiLearn,
     cancelMidiLearn: state.cancelMidiLearn,
     addMidiMapping: state.addMidiMapping,
+    showStatusMessage: state.showStatusMessage,
   }))
   
   const [learnStatus, setLearnStatus] = useState<'idle' | 'learning' | 'success' | 'timeout'>('idle')
@@ -24,107 +24,100 @@ export const useMidiLearn = () => {
   
   // Start MIDI learn mode for a channel
   const startLearn = useCallback((channel: number) => {
-    // Cancel any previous learning mode
-    if (midiLearnChannel !== null) {
-      cancelMidiLearn()
+    if (midiLearnChannel !== null && midiLearnChannel !== channel) {
+      cancelMidiLearnAction() 
+      console.log(`[MidiLearn] Canceled previous learn for CH ${midiLearnChannel} to start CH ${channel}`);
     }
     
-    // Start the new learning mode
-    startMidiLearn(channel)
+    startMidiLearnAction(channel)
     setLearnStatus('learning')
+    showStatusMessage(`MIDI Learn started for DMX CH ${channel + 1}. Send a MIDI CC.`, 'info');
+    console.log(`[MidiLearn] Started for DMX CH ${channel}. Status: learning.`);
     
-    // Set a timeout to cancel if no MIDI input is received
-    const id = window.setTimeout(() => {
-      if (midiLearnChannel === channel) {
-        cancelMidiLearn()
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
+
+    const newTimeoutId = window.setTimeout(() => {
+      if (useStore.getState().midiLearnChannel === channel) { 
+        cancelMidiLearnAction()
         setLearnStatus('timeout')
+        showStatusMessage(`MIDI Learn for DMX CH ${channel + 1} timed out.`, 'error');
+        console.log(`[MidiLearn] Timed out for DMX CH ${channel}. Status: timeout.`);
       }
-    }, 30000) // 30 seconds timeout
+    }, 30000)
     
-    setTimeoutId(id)
-  }, [midiLearnChannel, cancelMidiLearn, startMidiLearn])
+    setTimeoutId(newTimeoutId)
+  }, [midiLearnChannel, startMidiLearnAction, cancelMidiLearnAction, showStatusMessage, timeoutId])
   
   // Cancel MIDI learn mode
   const cancelLearn = useCallback(() => {
-    cancelMidiLearn()
+    if (midiLearnChannel !== null) {
+      console.log(`[MidiLearn] Cancelling learn for DMX CH ${midiLearnChannel}. Status: idle.`);
+      cancelMidiLearnAction()
+      showStatusMessage(`MIDI Learn cancelled for DMX CH ${midiLearnChannel + 1}.`, 'info');
+    }
     setLearnStatus('idle')
     
     if (timeoutId) {
       window.clearTimeout(timeoutId)
       setTimeoutId(null)
     }
-  }, [cancelMidiLearn, timeoutId])
+  }, [cancelMidiLearnAction, midiLearnChannel, timeoutId, showStatusMessage])
   
-  // Reset learn status after timeout
+  // Reset learn status after success or timeout
   useEffect(() => {
-    if (learnStatus === 'timeout' || learnStatus === 'success') {
-      console.log(`Learn status changed to ${learnStatus}, will reset to idle in 3 seconds`);
-      const resetTimeout = window.setTimeout(() => {
+    let resetTimer: number | null = null;
+    if (learnStatus === 'success' || learnStatus === 'timeout') {
+      console.log(`[MidiLearn] Learn status is ${learnStatus}. Will reset to idle in 3 seconds.`);
+      resetTimer = window.setTimeout(() => {
         setLearnStatus('idle');
-        console.log('Learn status reset to idle');
+        console.log('[MidiLearn] Learn status reset to idle.');
       }, 3000);
-      
-      return () => window.clearTimeout(resetTimeout);
     }
+    return () => {
+      if (resetTimer) {
+        window.clearTimeout(resetTimer);
+      }
+    };
   }, [learnStatus])
   
   // Listen for MIDI messages during learn mode
   useEffect(() => {
-    if (midiLearnChannel !== null && midiMessages.length > 0) {
-      const latestMessage = midiMessages[midiMessages.length - 1]
-      
-      // Only process if we're in learning mode
-      if (learnStatus === 'learning') {
-        console.log('[MidiLearn] Processing message for MIDI learn:', latestMessage)
-        
-        // Handle only note on and cc messages for mapping
-        if (latestMessage._type === 'noteon' || latestMessage._type === 'cc') {
-          let mapping: MidiMapping
-          
-          if (latestMessage._type === 'noteon') {
-            mapping = {
-              channel: latestMessage.channel,
-              note: latestMessage.note
-            }
-            console.log('[MidiLearn] Creating note mapping:', mapping)
-          } else { // cc
-            mapping = {
-              channel: latestMessage.channel,
-              controller: latestMessage.controller
-            }
-            console.log('[MidiLearn] Creating CC mapping for DMX channel', midiLearnChannel, mapping)
-          }
-          
-          // Add the mapping - this updates the store
-          addMidiMapping(midiLearnChannel, mapping)
-          
-          // Force immediate update for the UI
-          const event = new CustomEvent('midiMappingCreated', { detail: { channel: midiLearnChannel, mapping } })
-          window.dispatchEvent(event)
-          
-          // Update status
-          setLearnStatus('success')
-          
-          // Alert the MidiDmxProcessor that a new mapping has been created
-          if (typeof window !== 'undefined') {
-            console.log(`[MidiLearn] Dispatching midiMappingCreated event for channel ${midiLearnChannel}`);
-            window.dispatchEvent(new CustomEvent('midiMappingCreated', { 
-              detail: { channel: midiLearnChannel, mapping }
-            }));
-          }
-          
-          // Clear the timeout
-          if (timeoutId) {
-            window.clearTimeout(timeoutId)
-            setTimeoutId(null)
-          }
-        }
-      }
+    if (midiLearnChannel === null || learnStatus !== 'learning' || midiMessages.length === 0) {
+      return;
     }
-  }, [midiMessages, midiLearnChannel, learnStatus, addMidiMapping, timeoutId])
+
+    const latestMessage = midiMessages[midiMessages.length - 1]
+    console.log('[MidiLearn] In learn mode. Processing message:', latestMessage, `for DMX CH ${midiLearnChannel}`);
+    
+    if (latestMessage._type === 'cc' && latestMessage.controller !== undefined) {
+      const mapping: MidiMapping = {
+        channel: latestMessage.channel,
+        controller: latestMessage.controller
+      }
+      console.log(`[MidiLearn] Creating CC mapping for DMX CH ${midiLearnChannel}:`, mapping);
+      
+      addMidiMapping(midiLearnChannel, mapping)
+      
+      const event = new CustomEvent('midiMappingCreated', { detail: { channel: midiLearnChannel, mapping } })
+      window.dispatchEvent(event)
+      
+      setLearnStatus('success')
+      showStatusMessage(`DMX CH ${midiLearnChannel + 1} mapped to MIDI CC ${mapping.controller} on CH ${mapping.channel + 1}.`, 'success');
+      console.log(`[MidiLearn] Success for DMX CH ${midiLearnChannel}. Status: success.`);
+      
+      if (timeoutId) {
+        window.clearTimeout(timeoutId)
+        setTimeoutId(null)
+      }
+    } else {
+      console.log('[MidiLearn] Ignoring non-CC message or message without controller:', latestMessage._type);
+    }
+  }, [midiMessages, midiLearnChannel, learnStatus, addMidiMapping, timeoutId, showStatusMessage, cancelMidiLearnAction]);
   
   return {
-    isLearning: midiLearnChannel !== null,
+    isLearning: midiLearnChannel !== null && learnStatus === 'learning',
     learnStatus,
     currentLearningChannel: midiLearnChannel,
     startLearn,

@@ -10,7 +10,7 @@
   "midiMappings": {
     "0": {
       "channel": 0,
-      "controller": 75
+      "controller": 74
     },
     "1": {
       "channel": 0,
@@ -23,6 +23,10 @@
     "3": {
       "channel": 0,
       "controller": 91
+    },
+    "999": {
+      "channel": 0,
+      "controller": 73
     }
   },
   "oscAssignments": [

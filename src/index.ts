@@ -746,27 +746,40 @@ function pingArtNetDevice(io: Server, ip?: string) {
             }
             io.emit('artnetStatus', { ip: targetIp, status: 'alive' });
         })
-        .catch((error) => {
-            // Don't treat connection failures as errors, just report device as unreachable
-            artNetFailureCount++;
-            
-            // Only log on status change or every MAX_CONSECUTIVE_FAILURES attempts
-            if (lastArtNetStatus !== 'unreachable' || artNetFailureCount >= MAX_CONSECUTIVE_FAILURES) {
-                log(`ArtNet device at ${targetIp} is unreachable`, 'WARN', { 
-                    error: error.message, 
-                    quiet: lastArtNetStatus === 'unreachable' 
-                });
-                
+        .catch((error: Error) => {
+            let newStatus: string;
+            let logMessage: string;
+            let clientMessage: string;
+            let logLevel: 'WARN' | 'INFO' = 'WARN';
+
+            if (error.message && error.message.includes('Connection timed out')) {
+                newStatus = 'tcp_timeout';
+                logMessage = `ArtNet TCP ping to ${targetIp} timed out. UDP DMX may still be operational.`;
+                clientMessage = `ArtNet TCP ping to ${targetIp} timed out. UDP DMX communication may still be functional.`;
+                logLevel = 'INFO';
+            } else {
+                newStatus = 'unreachable';
+                logMessage = `ArtNet device at ${targetIp} is unreachable: ${error.message}`;
+                clientMessage = `ArtNet device at ${targetIp} is not responding: ${error.message}`;
+            }
+
+            if (lastArtNetStatus !== newStatus) {
+                log(logMessage, logLevel, { errorDetail: error.message, previousStatus: lastArtNetStatus });
+                artNetFailureCount = 0; // Reset on any status change
+            } else if (newStatus === 'unreachable') { // Only apply MAX_CONSECUTIVE_FAILURES to 'unreachable'
+                artNetFailureCount++;
                 if (artNetFailureCount >= MAX_CONSECUTIVE_FAILURES) {
+                    log(logMessage, logLevel, { errorDetail: error.message, failureCount: artNetFailureCount, status: newStatus });
                     artNetFailureCount = 0;
                 }
             }
-            
-            lastArtNetStatus = 'unreachable';
-            io.emit('artnetStatus', { 
-                ip: targetIp, 
-                status: 'unreachable',
-                message: 'Device is not responding on ArtNet port'
+            // For newStatus === 'tcp_timeout' and lastArtNetStatus === 'tcp_timeout', no repeated log to avoid noise.
+
+            lastArtNetStatus = newStatus;
+            io.emit('artnetStatus', {
+                ip: targetIp,
+                status: newStatus,
+                message: clientMessage
             });
         });
 }

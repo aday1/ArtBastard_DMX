@@ -21,169 +21,89 @@ export const MidiDmxProcessor: React.FC = () => {
   const setDmxChannel = useStore(state => state.setDmxChannel);
   const { scaleValue } = useMidiScaling();
   
-  // Log when MIDI mappings change, helpful for debugging
-  useEffect(() => {
-    console.log('[MidiDmxProcessor] MIDI mappings updated:', midiMappings);
-  }, [midiMappings]);
-  
-  // Listen for new MIDI mappings
-  useEffect(() => {
-    const handleMidiMappingCreated = (event: Event) => {
-      const customEvent = event as CustomEvent<{channel: number, mapping: any}>;
-      console.log(`[MidiDmxProcessor] New MIDI mapping created for channel ${customEvent.detail?.channel}:`, customEvent.detail?.mapping);
-      
-      // We don't need to do anything special here as the store will be updated automatically.
-      // This is just for debugging and to confirm that the event is caught.
-    };
-    
-    // Add event listener
-    window.addEventListener('midiMappingCreated', handleMidiMappingCreated);
-    
-    // Clean up
-    return () => {
-      window.removeEventListener('midiMappingCreated', handleMidiMappingCreated);
-    };
-  }, []);
-  
   // Keep track of the last processed message to prevent duplicates
   const [lastProcessedMessage, setLastProcessedMessage] = useState<number>(0);
   
   // Keep track of custom range mappings for each channel
-  const [channelRangeMappings, setChannelRangeMappings] = useState<Record<number, MidiRangeMapping>>({});    // Process MIDI messages and update DMX channels
-  useEffect(() => {
-    if (!midiMessages || midiMessages.length === 0) return;
-    
-    const latestMessage = midiMessages[midiMessages.length - 1];
-    
-    // Skip if we've already processed this message
-    // We use the length of the messages array as a simple ID
-    if (midiMessages.length <= lastProcessedMessage) return;
-    
-    console.log(`[MidiDmxProcessor] Processing new MIDI message #${midiMessages.length}:`, latestMessage);
-    setLastProcessedMessage(midiMessages.length);
-    
-    // Only process CC messages for now (you can add note handling if needed)
-    if (latestMessage._type === 'cc' && typeof latestMessage.value === 'number') {
-      console.log('[MidiDmxProcessor] Processing CC message:', latestMessage);
-        // Look for channels mapped to this controller
-      let matchFound = false;
-      console.log('[MidiDmxProcessor] Current MIDI mappings:', midiMappings);
-      
-      Object.entries(midiMappings).forEach(([dmxChannelStr, mapping]) => {
-        const dmxChannel = parseInt(dmxChannelStr, 10);
-        
-        console.log(`[MidiDmxProcessor] Checking DMX Channel ${dmxChannel} mapping:`, mapping);
-        console.log(`[MidiDmxProcessor] Comparing with message: channel=${latestMessage.channel}, controller=${latestMessage.controller}`);
-        
-        // Compare the mapping with the incoming message
-        if (mapping && 
-            mapping.channel === latestMessage.channel && 
-            mapping.controller === latestMessage.controller) {
-            
-          console.log(`[MidiDmxProcessor] ✓ Found match for DMX Channel ${dmxChannel}!`);
-          matchFound = true;
-          
-          // Get any custom range mapping for this channel
-          const rangeMapping = channelRangeMappings[dmxChannel] || {};
-            // Scale MIDI value (0-127) to DMX value (0-255) with custom range and curve if specified
-          const scalingOptions: Partial<ScalingOptions> = {
-            inputMin: rangeMapping.inputMin,
-            inputMax: rangeMapping.inputMax,
-            outputMin: rangeMapping.outputMin,
-            outputMax: rangeMapping.outputMax,
-            curve: rangeMapping.curve
-          };
-          
-          // Only include properties that are actually set
-          Object.keys(scalingOptions).forEach(key => {
-            if (scalingOptions[key as keyof ScalingOptions] === undefined) {
-              delete scalingOptions[key as keyof ScalingOptions];
-            }
-          });
-                const scaledValue = scaleValue(latestMessage.value, scalingOptions);
-            console.log(`[MidiDmxProcessor] Updating DMX channel ${dmxChannel} to ${scaledValue} (from MIDI CC value ${latestMessage.value})`, 
-            Object.keys(scalingOptions).length > 0 ? `with custom scaling: ${JSON.stringify(scalingOptions)}` : '');
-            // Update the DMX channel - force value to a number within valid range
-          const boundedValue = Math.max(0, Math.min(255, Math.round(scaledValue)));
-          console.log(`[MidiDmxProcessor] Setting DMX channel ${dmxChannel} to ${boundedValue} (store update)`);
-          setDmxChannel(dmxChannel, boundedValue);
-          
-          // Dispatch a custom event to ensure the UI updates for this channel
-          if (typeof window !== 'undefined') {
-            console.log(`[MidiDmxProcessor] Dispatching dmxChannelUpdate event for channel ${dmxChannel} with value ${boundedValue}`);
-            try {
-              const event = new CustomEvent('dmxChannelUpdate', { 
-                detail: { channel: dmxChannel, value: boundedValue }
-              });
-              window.dispatchEvent(event);
-              console.log(`[MidiDmxProcessor] Event dispatched successfully for channel ${dmxChannel}`);
-            } catch (error) {
-              console.error(`[MidiDmxProcessor] Error dispatching event:`, error);
-            }
-          }
-        }
-      });
-      
-      // If no matching channel was found, log it
-      if (!matchFound && Object.keys(midiMappings).length > 0) {
-        console.log(`[MidiDmxProcessor] No DMX channel mapped to CC ${latestMessage.channel}:${latestMessage.controller}`);
-      }
-    } else if (latestMessage._type === 'noteon' && typeof latestMessage.note === 'number') {
-      console.log('[MidiDmxProcessor] Processing Note On message:', latestMessage);
-      
-      // Look for channels mapped to this note
-      Object.entries(midiMappings).forEach(([dmxChannelStr, mapping]) => {
-        const dmxChannel = parseInt(dmxChannelStr, 10);
-        
-        if (mapping && 
-            mapping.channel === latestMessage.channel && 
-            mapping.note === latestMessage.note && 
-            latestMessage.velocity !== undefined) {
-          
-          // Get any custom range mapping for this channel
-          const rangeMapping = channelRangeMappings[dmxChannel] || {};
-                // Scale MIDI velocity (0-127) to DMX value (0-255) with custom range and curve if specified
-          const scalingOptions: Partial<ScalingOptions> = {
-            inputMin: rangeMapping.inputMin,
-            inputMax: rangeMapping.inputMax,
-            outputMin: rangeMapping.outputMin,
-            outputMax: rangeMapping.outputMax,
-            curve: rangeMapping.curve
-          };
-          
-          // Only include properties that are actually set
-          Object.keys(scalingOptions).forEach(key => {
-            if (scalingOptions[key as keyof ScalingOptions] === undefined) {
-              delete scalingOptions[key as keyof ScalingOptions];
-            }
-          });
-            const scaledValue = scaleValue(latestMessage.velocity, scalingOptions);
-          
-          console.log(`[MidiDmxProcessor] Updating DMX channel ${dmxChannel} to ${scaledValue} (from MIDI note velocity ${latestMessage.velocity})`,
-            Object.keys(scalingOptions).length > 0 ? `with custom scaling: ${JSON.stringify(scalingOptions)}` : '');
-            // Update the DMX channel - force value to a number within valid range
-          const boundedValue = Math.max(0, Math.min(255, Math.round(scaledValue)));
-          console.log(`[MidiDmxProcessor] Setting DMX channel ${dmxChannel} to ${boundedValue} (store update)`);
-          setDmxChannel(dmxChannel, boundedValue);
-          
-          // Dispatch a custom event to ensure the UI updates for this channel
-          if (typeof window !== 'undefined') {
-            console.log(`[MidiDmxProcessor] Dispatching dmxChannelUpdate event for channel ${dmxChannel} with value ${boundedValue}`);
-            try {
-              const event = new CustomEvent('dmxChannelUpdate', { 
-                detail: { channel: dmxChannel, value: boundedValue }
-              });
-              window.dispatchEvent(event);
-              console.log(`[MidiDmxProcessor] Event dispatched successfully for channel ${dmxChannel}`);
-            } catch (error) {
-              console.error(`[MidiDmxProcessor] Error dispatching event:`, error);
-            }
-          }
-        }
-      });
-    }
-  }, [midiMessages, midiMappings, setDmxChannel, scaleValue, channelRangeMappings]);
+  const [channelRangeMappings, setChannelRangeMappings] = useState<Record<number, MidiRangeMapping>>({});
   
+  // Log when MIDI mappings change, helpful for debugging
+  useEffect(() => {
+    console.log('[MidiDmxProcessor] MIDI mappings updated in store:', midiMappings);
+  }, [midiMappings]);
+  
+  // Process MIDI messages and update DMX channels
+  useEffect(() => {
+    if (!midiMessages || midiMessages.length === 0) {
+      return;
+    }
+
+    const latestMessage = midiMessages[midiMessages.length - 1];
+
+    if (midiMessages.length <= lastProcessedMessage) {
+      return;
+    }
+
+    console.log(`[MidiDmxProcessor] Attempting to process MIDI message #${midiMessages.length}:`, latestMessage);
+
+    if (latestMessage._type === 'cc' && typeof latestMessage.value === 'number') {
+      console.log('[MidiDmxProcessor] Processing CC message:', latestMessage, 'Current Mappings:', midiMappings);
+      setLastProcessedMessage(midiMessages.length); // Mark this message length as processed
+
+      let matchFoundThisRun = false;
+      Object.entries(midiMappings).forEach(([dmxChannelStr, mapping]) => {
+        if (!mapping) return;
+
+        const dmxChannel = parseInt(dmxChannelStr, 10);
+        
+        // Ensure mapping.controller is defined, as mapping could be for a note
+        if (mapping.controller !== undefined &&
+            mapping.channel === latestMessage.channel &&
+            mapping.controller === latestMessage.controller) {
+          
+          matchFoundThisRun = true;
+          console.log(`[MidiDmxProcessor] Match found for DMX CH ${dmxChannel} with MIDI CH ${latestMessage.channel} CC ${latestMessage.controller}`);
+
+          const currentRangeMapping = channelRangeMappings[dmxChannel] || {};
+          const scalingOptions: Partial<ScalingOptions> = {
+            inputMin: currentRangeMapping.inputMin,
+            inputMax: currentRangeMapping.inputMax,
+            outputMin: currentRangeMapping.outputMin,
+            outputMax: currentRangeMapping.outputMax,
+            curve: currentRangeMapping.curve,
+          };
+          
+          const dmxValue = scaleValue(latestMessage.value, scalingOptions);
+          const roundedDmxValue = typeof dmxValue === 'number' ? Math.round(dmxValue) : 0;
+          const boundedValue = Math.max(0, Math.min(255, roundedDmxValue));
+          
+          console.log(`[MidiDmxProcessor] MIDI val ${latestMessage.value} -> Scaled DMX val ${dmxValue} -> Rounded ${roundedDmxValue} -> Bounded DMX val ${boundedValue} for DMX CH ${dmxChannel}`);
+          
+          setDmxChannel(dmxChannel, boundedValue);
+          
+          if (typeof window !== 'undefined') {
+            console.log(`[MidiDmxProcessor] Dispatching dmxChannelUpdate event for channel ${dmxChannel} with value ${boundedValue}`);
+            try {
+              const event = new CustomEvent('dmxChannelUpdate', { 
+                detail: { channel: dmxChannel, value: boundedValue }
+              });
+              window.dispatchEvent(event);
+            } catch (error) {
+              console.error(`[MidiDmxProcessor] Error dispatching event:`, error);
+            }
+          }
+        }
+      });
+
+      if (!matchFoundThisRun) {
+        console.log('[MidiDmxProcessor] No DMX channel mapped to received CC message:', latestMessage, 'Current Mappings:', midiMappings);
+      }
+    } else if (latestMessage._type !== 'noteon' && latestMessage._type !== 'noteoff') {
+      setLastProcessedMessage(midiMessages.length);
+      console.log(`[MidiDmxProcessor] Ignored/marked as processed non-CC message type: ${latestMessage._type}`);
+    }
+  }, [midiMessages, midiMappings, setDmxChannel, scaleValue, channelRangeMappings, lastProcessedMessage]);
+
   /**
    * Set a custom range mapping for a specific DMX channel
    */
